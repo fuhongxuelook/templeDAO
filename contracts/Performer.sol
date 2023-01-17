@@ -14,7 +14,6 @@ contract Performer is PerformerInterface, FeeTo {
     using Address for address;
     using TransferHelper for address;
 
-
     address swap;
 
     constructor(address _feeTo) {

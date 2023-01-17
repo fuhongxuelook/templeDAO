@@ -2,16 +2,27 @@
 
 pragma solidity ^0.8.0;
 
-import "./Libraries/Constants.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {Constants} from "./Libraries/Constants.sol";
+import {Token} from "./Token.sol";
+import {Swap} from "./Swap.sol";
 
-contract Pool is Ownable {
+contract Pool is Token {
 
-    uint256 reserve;
-    address factory;
-    address vault;
-    mapping(address => bool) allowed;
+    uint256 public reserve;
+    address public factory;
+    address public vault;
+    string name;
+
+    event TradeTrace(
+        address fromToken, 
+        address toToken, 
+        uint256 fromAmount, 
+        uint256 toAmount,
+        uint256 blockTime
+    );
+
+    mapping(address => bool) public allowed;
+    mapping(address => uint256) public tokenReserve;
 
     error TokenNotAllowed(address token);
 
@@ -19,38 +30,60 @@ contract Pool is Ownable {
         factory = msg.sender;
     }
 
-    function initialize(address _vault) external {
-        vault = _vault;
-    }
-
     receive() external payable {}
 
-    modifier onlyFactory {
-        require(msg.sender == factory, "E: call must be factory");
+    modifier onlyVault{
+        require(msg.sender == vault, "E: FORBIDDEN");
         _;
     }
 
+    function initialize(address _vault, string _name) external {
+        require(msg.sender == factory, 'E: FORBIDDEN');
+        vault = _vault;
+        name = _name;
+    }
+
+    function getName() external view returns (string) {
+        return name;
+    }
+
     function trade(
-        address fromToken, 
-        address toToken, 
-        bytes calldata data, 
+        uint aggregatorIndex,
+        address tokenFrom,
+        address tokenTo,
+        uint256 amount,
+        bytes calldata data
     ) external onlyOwner {
         if(!allowed[toToken]) {
             revert TokenNotAllowed(toToken);
         }
+
+        uint256 balanceBefore = ERC20(toToken).balanceOf(address(this));
+
+        Swap.swap(aggregatorIndex, tokenFrom, tokenTo, amount, data);
+
+        uint256 balanceAfter = ERC20(toToken).balanceOf(address(this));
+        uint256 realTradeAmount = balanceAfter - balanceBefore;
+        emit TradeTrace(fromToken, toToken, amount, realTradeAmount, block.timestamp);
     }  
 
-    function liquidate(address token, uint256 amount) external onlyFactory {
+    function liquidate(address token, uint256 amount) external {
+        // mapping(address => uint256) public tokenReserve;
+        if(tokenReserve[token] >= amount) {
+            revert TokenReserveNotEnough(token);
+        }
 
+        token.swap(token, Constants.USDT, amount);
+        return;
     }
 
-    function toVault(uint256 amount) external onlyFactory {
+    function pool2Vault(uint256 amount) external onlyVault {
         USDT.safeTransfer(msg.sender, amount);
 
         reserve -= amount;
     }
 
-    function fromVault(uint256 amount) external onlyFactory {
+    function vault2Pool(uint256 amount) external onlyVault {
         USDT.safeTransferFrom(msg.sender, address(this), amount);
 
         reserve += amount;
@@ -73,6 +106,6 @@ contract Pool is Ownable {
 
     // force reserves to match balances
     function sync() external {
-        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
+        reserve = ERC20(USDT).balanceOf(address(this));
     }
 }

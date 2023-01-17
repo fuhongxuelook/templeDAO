@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-contract LP is ERC20, Ownable {
+contract Token is ERC20, Ownable {
 
     constructor() {}
 
@@ -17,5 +17,4 @@ contract LP is ERC20, Ownable {
     function safeBurn(address account, uint256 amount) external onlyOwner {
         _burn(account, amount);
     }
-       
 }

@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import "./Libraries/Constants.sol";
+import {Constants} from "./Libraries/Constants.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {Factory} from "./Factory.sol";
 
 contract Vault is Ownable {
 
@@ -12,14 +13,13 @@ contract Vault is Ownable {
     using TransferHelper for address;
 
     uint256 constant FEE_DENOMIRATOR = 10_000;
-    address constant USDT = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     uint256 profitFeeRate = 1_000;
     // only take once
     uint256 manageFeeRate = 100;
     uint256 reserve0;
     uint256 gross;
-    ERC20 lp;
+    Factory factory;
 
     address feeTo;
 
@@ -29,13 +29,12 @@ contract Vault is Ownable {
     error TokenReserveNotEnough(address);
 
     // address token => reserve amount
-    mapping(address => uint256) public tokenReserve;
+    mapping(address => uint256) public poolSend;
+    mapping(address => uint256) public poolGet;
     // address user => principal
     mapping(address => uint256) public principal;
     // address token => bool status
     mapping(address => bool) public allowed;
-    // pool id => pool address
-    mapping(uint256 => address) pools;
 
     // function depositETH() external payable {
     //     uint256 ethWorth = price * msg.value;
@@ -45,9 +44,8 @@ contract Vault is Ownable {
     //     lp.safeMint(msg.sender, amount);
     // }
 
-    constructor(address _lp) {
-        lp = ERC20(_lp);
-        feeTo = msg.sender;
+    constructor(address _factory) {
+        factory = _factory;
     }
    
     receive() external payable {}
@@ -166,13 +164,15 @@ contract Vault is Ownable {
 
     function liquidate(address token, uint256 poolid) external {
         // mapping(address => uint256) public tokenReserve;
-        if(tokenReserve[token] == 0) {
+        address pool = Factory(factory).getPool(poolid);
+
+        if(pool.tokenReserve[token] == 0) {
             revert TokenReserveNotEnough(token);
         }
 
-        uint256 liquidateAmount = lp.balanceOf(msg.sender);
+        uint256 liquidateAmount = pool.balanceOf(msg.sender);
 
-        uint256 reserved = tokenReserve[USDT];
+        uint256 reserved = pool.tokenReserve[Constants.USDT];
 
         require(liquidateAmount > reserved, "E: needn't to liquidate");
 
@@ -183,7 +183,9 @@ contract Vault is Ownable {
         if(needToBeLiquidateTokenAmount >= tokenReserve[token]) {
             needToBeLiquidateTokenAmount = tokenReserve[token];
         } 
-        token.swap(USDT, needToBeLiquidateTokenAmount);
+
+        pool.liquidate(token, needToBeLiquidateTokenAmount);
+
         return;
     }
 }
