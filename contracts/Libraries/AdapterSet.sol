@@ -21,7 +21,6 @@ library AdapterSet {
      */ 
     struct Adapter {
         address _router;
-        address _proxy;
         bytes32 _name;
     }
 

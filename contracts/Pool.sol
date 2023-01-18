@@ -22,6 +22,7 @@ contract Pool is Token {
     );
 
     mapping(address => bool) public allowed;
+    address[] public allAllowed;// less change, can be complex
     mapping(address => uint256) public tokenReserve;
 
     error TokenNotAllowed(address token);
@@ -32,7 +33,7 @@ contract Pool is Token {
 
     receive() external payable {}
 
-    modifier onlyVault{
+    modifier onlyVault {
         require(msg.sender == vault, "E: FORBIDDEN");
         _;
     }
@@ -41,12 +42,49 @@ contract Pool is Token {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         name = _name;
+
+        Constants.USDT.safeApprove(vault, type(uint256).max);
     }
 
+    /**
+     * @dev 
+     * 
+     * If Token is ETH, skip this
+     * Token Will be check allowance of address(this)
+     * if less than amount, approve max(uint256)
+     * 
+     */ 
+    function approveAllowance(address router, address token, uint256 amount) internal {
+        if(token == Constants.ETH) return;
+
+        uint256 allowance = IERC20(token).allowance(address(this), router);
+        if(allowance >= amount) {
+            return;
+        }
+        token.safeApprove(router, type(uint256).max);
+    }
+
+    /// @dev add allowed token 
+    function addAllowed(address token) external onlyVault {
+        require(!allowed[token], "E: token has already been allowed");
+
+        allowed[token] = true;
+        allAllowed.push(token);
+    }
+
+    /// @dev remove allowed token
+    function removeAllowed(address token) external onlyVault {
+        require(allowed[token], "E: token is not allowed");
+
+        allowed[token] = false;
+    }
+
+    /// @dev get pool name
     function getName() external view returns (string) {
         return name;
     }
 
+    /// @dev trade token to other token
     function trade(
         uint aggregatorIndex,
         address tokenFrom,
@@ -58,6 +96,8 @@ contract Pool is Token {
             revert TokenNotAllowed(toToken);
         }
 
+        approveAllowance(router, tokenFrom, amount);
+
         uint256 balanceBefore = ERC20(toToken).balanceOf(address(this));
 
         Swap.swap(aggregatorIndex, tokenFrom, tokenTo, amount, data);
@@ -67,7 +107,10 @@ contract Pool is Token {
         emit TradeTrace(fromToken, toToken, amount, realTradeAmount, block.timestamp);
     }  
 
-    function liquidate(address token, uint256 amount) external {
+    /// @dev liquidate token to USDT
+    function liquidate(address token, uint256 amount) external onlyVault {
+        require(token != Constants.USDT, "E: token cant be USDT");
+
         // mapping(address => uint256) public tokenReserve;
         if(tokenReserve[token] >= amount) {
             revert TokenReserveNotEnough(token);
@@ -77,18 +120,22 @@ contract Pool is Token {
         return;
     }
 
+
+    /// @dev vault take USDT from pool
     function pool2Vault(uint256 amount) external onlyVault {
         USDT.safeTransfer(msg.sender, amount);
 
         reserve -= amount;
     }
 
+    /// @dev vault send USDT to pool
     function vault2Pool(uint256 amount) external onlyVault {
         USDT.safeTransferFrom(msg.sender, address(this), amount);
 
         reserve += amount;
     }
 
+    /// @dev skim reserve and balance;
     function skim() external {
         uint256 balance = ERC20(USDT).balanceOf(address(this));
         if(balance >= reserve) {

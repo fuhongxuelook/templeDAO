@@ -8,19 +8,21 @@ contract Factory {
 
     address public feeTo;
     address public feeToSetter;
+    address public vault;
 
     mapping(uint256 => address) public getPool;
     address[] public allPools;
 
-    constructor(address _feeToSetter) public {
+    constructor(address _feeToSetter, address _vault) public {
         feeToSetter = _feeToSetter;
+        vault = _vault;
     }
 
     function allPairsLength() external view returns (uint) {
         return allPools.length;
     }
 
-    function createPool(address vault, string memory poolname) external returns (address pool) {
+    function createPool(string memory poolname) external returns (address pool) {
         bytes memory bytecode = type(Pool).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(poolname));
         assembly {

@@ -18,15 +18,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract Swap is 
     SwapInterface, 
-    Initializable, 
     AdapterManage, 
     PausableUpgradeable, 
     ReentrancyGuardUpgradeable, 
     UUPSUpgradeable 
 {    
-
-    PerformerInterface public performer;
-    
     using TransferHelper for address;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -34,12 +30,13 @@ contract Swap is
        _disableInitializers();
     }
 
-    function initialize(address _performer) external initializer {
+    function initialize() external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
         __Pausable_init();
-        performer = PerformerInterface(_performer);
     }
+
+    error AddressCantBeZero();
 
     /**
      * @dev See SwapInterface - swap
@@ -57,7 +54,7 @@ contract Swap is
      * - tokenTo cant be 0
      */
     function swap(
-        uint aggregatorIndex,
+        uint256 aggregatorIndex,
         address tokenFrom,
         address tokenTo,
         uint256 amount,
@@ -67,12 +64,9 @@ contract Swap is
         // get router by register index
         AdapterSet.Adapter memory adapter = getAdapterByIndex(aggregatorIndex);
 
-        require(adapter._router != address(0), "Swap::swap : AggregatorIndex not exists");
-        require(tokenFrom != address(0), "Swap::swap : TokenFrom cant be zero");
-        require(tokenTo != address(0), "Swap::swap : TokenTo cant be zero");
-
-        // save gas
-        address recipient = msg.sender;
+        if(adapter._router == address(0)) revert AddressCantBeZero();
+        if(tokenFrom == address(0)) revert AddressCantBeZero();
+        if(tokenTo == address(0)) revert AddressCantBeZero();
 
         if (tokenFrom != Constants.ETH) {
             /// not check allowance  for save gas
@@ -80,21 +74,17 @@ contract Swap is
             /// will be revert
             /// use call for not standard erc20 and save gas
             /// deflationary tokens need to increase slippage
-            tokenFrom.safeTransferFrom(recipient, address(performer), amount);
+            tokenFrom.safeTransferFrom(msg.sender, address(this), amount);
         } 
 
-        bool b = performer.perform{value: msg.value}(
-            tokenFrom,
-            tokenTo,
-            amount,
-            recipient,
-            adapter,
-            data
-        );
-        require(b, "Swap::swap : Internal error");
+        // check allowance and approve it max
+        approveAllowance(adapter._router, tokenFrom, amount);
+
+        // now cant deal this call return data
+        // we dont know what's type each aggregator returns
+        adapter._router.functionCallWithValue(data, msg.value);
 
         emit Swap(aggregatorIndex, tokenFrom, tokenTo, recipient, amount, block.timestamp);
-
     }
 
     /**
