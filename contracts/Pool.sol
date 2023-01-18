@@ -38,7 +38,7 @@ contract Pool is Token {
         _;
     }
 
-    function initialize(address _vault, string _name) external {
+    function initialize(address _vault, string _name) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         name = _name;
@@ -65,7 +65,7 @@ contract Pool is Token {
     }
 
     /// @dev add allowed token 
-    function addAllowed(address token) external onlyVault {
+    function addAllowed(address token) external override onlyVault {
         require(!allowed[token], "E: token has already been allowed");
 
         allowed[token] = true;
@@ -73,14 +73,14 @@ contract Pool is Token {
     }
 
     /// @dev remove allowed token
-    function removeAllowed(address token) external onlyVault {
+    function removeAllowed(address token) external override onlyVault {
         require(allowed[token], "E: token is not allowed");
 
         allowed[token] = false;
     }
 
     /// @dev get pool name
-    function getName() external view returns (string) {
+    function getName() external view override returns (string) {
         return name;
     }
 
@@ -91,7 +91,7 @@ contract Pool is Token {
         address tokenTo,
         uint256 amount,
         bytes calldata data
-    ) external onlyOwner {
+    ) external override onlyOwner {
         if(!allowed[toToken]) {
             revert TokenNotAllowed(toToken);
         }
@@ -117,7 +117,7 @@ contract Pool is Token {
         address token,
         uint256 amount,
         bytes calldata data
-    ) external onlyVault {
+    ) external override onlyVault {
         require(token != Constants.USDT, "E: token cant be USDT");
 
         // mapping(address => uint256) public tokenReserve;
@@ -140,14 +140,14 @@ contract Pool is Token {
 
 
     /// @dev vault take USDT from pool
-    function pool2Vault(uint256 amount) external onlyVault {
+    function pool2Vault(uint256 amount) external override onlyVault {
         USDT.safeTransfer(msg.sender, amount);
 
         reserve -= amount;
     }
 
     /// @dev vault send USDT to pool
-    function vault2Pool(uint256 amount) external onlyVault {
+    function vault2Pool(uint256 amount) external override onlyVault {
         USDT.safeTransferFrom(msg.sender, address(this), amount);
 
         reserve += amount;
@@ -172,5 +172,15 @@ contract Pool is Token {
     // force reserves to match balances
     function sync() external {
         reserve = ERC20(USDT).balanceOf(address(this));
+    }
+
+    /// @dev mint token
+    function safeMint(address account, uint256 amount) external override onlyVault {
+        _mint(account, amount);
+    }
+
+    /// @dev burn token
+    function safeBurn(address account, uint256 amount) external override onlyVault {
+        _burn(account, amount);
     }
 }

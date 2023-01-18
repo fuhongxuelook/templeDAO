@@ -89,23 +89,6 @@ contract Swap is
     }
 
     /**
-     * @dev See SwapInterface - setPerformer
-     * 
-     * Requirements:
-     * - performer neq newPerformmer
-     */ 
-    function setPerformer(address newPerformer) external override onlyOwner {
-        require(
-            address(performer) != newPerformer, 
-            "Swap::swap : Same address"
-        );
-
-        emit SetPerform(address(performer), newPerformer, block.timestamp);
-
-        performer = PerformerInterface(newPerformer);
-    }
-
-    /**
      * @dev pause swap contract
      * 
      * Requirements

@@ -6,6 +6,7 @@ import {Constants} from "./Libraries/Constants.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {Factory} from "./Factory.sol";
+import {Pool} from "./Pool.sol";
 
 contract Vault is Ownable {
 
@@ -54,7 +55,7 @@ contract Vault is Ownable {
         return reserve0;
     }
 
-    function deposit(address token, uint256 amount, uint256 poolID) external {
+    function deposit(address token, uint256 amount, uint256 poolid) external {
         if(!allowed[token]) {
             revert NotAllowedToken(token);
         }
@@ -70,11 +71,13 @@ contract Vault is Ownable {
             token.safeTransferFrom(msg.sender, feeTo, manageFeeAmount);
         }
 
-        uint256 tokenDeposited = amount - manageFeeAmount
+        uint256 tokenDeposited = amount - manageFeeAmount;
+
+        address pool = factory.getPool(poolid);
 
         uint256 tokenBalanceBefore = ERC20(token).balanceOf(address(this));
 
-        token.safeTransferFrom(msg.sender, address(this), tokenDeposited);
+        token.safeTransferFrom(msg.sender, address(pool), tokenDeposited);
         
         uint256 tokenBalanceAfter = ERC20(token).balanceOf(address(this));
 
@@ -85,7 +88,7 @@ contract Vault is Ownable {
 
         tokenReserve[token] += tokenDeposited;
         reserve0 += tokenDeposied;
-        lp.safeMint(msg.sender, tokenDeposited);
+        pool.safeMint(msg.sender, tokenDeposited);
     }
 
       // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
@@ -116,12 +119,14 @@ contract Vault is Ownable {
     //     lp.safeBurn(msg.sender, fundTokenAmount);
     // }
 
-    function withdraw(address token, uint256 amount) external {
+    function withdraw(address token, uint256 amount, uint256 poolid) external {
         if(!allowed[token]) {
             revert NotAllowedToken(token);
         }
 
-        uint256 fundTokenAmount = lp.balanceOf(msg.sender);
+        Pool pool = factory.getPool(poolid);
+
+        uint256 fundTokenAmount = pool.balanceOf(msg.sender);
 
         require(fundTokenAmount >= amount, "E: amount");
 
@@ -133,12 +138,12 @@ contract Vault is Ownable {
         uint256 profitFee;
         if(revenue > _partPrinciple) {
             profitFee = profitFeeRate * (revenue - _partPrinciple) / FEE_DENOMIRATOR;
-            USDT.safeTransfer(feeTo, profitFee);
+            Constants.USDT.safeTransfer(feeTo, profitFee);
         }
 
-        USDT.safeTransfer(msg.sender, revenue - _partPrinciple);
+        Constants.USDT.safeTransfer(msg.sender, revenue - _partPrinciple);
 
-        lp.safeBurn(msg.sender, amount);
+        pool.safeBurn(msg.sender, amount);
     }
 
     function addTokenAllowed(address token) external onlyOwner {
@@ -161,26 +166,33 @@ contract Vault is Ownable {
         return price;
     }
 
-    function liquidate(address token, uint256 poolid) external {
+    function liquidate(
+        uint256 aggregatorIndex,
+        address token,
+        uint256 amount,
+        uint256 poolid,
+        bytes calldata data
+    ) external {
         // mapping(address => uint256) public tokenReserve;
-        address pool = Factory(factory).getPool(poolid);
+        Pool pool = factory.getPool(poolid);
 
-        if(pool.tokenReserve[token] == 0) {
+        uint256 tokenReserve = pool.tokenReserve(token);
+        uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
+
+        if(tokenReserve == 0) {
             revert TokenReserveNotEnough(token);
         }
 
         uint256 liquidateAmount = pool.balanceOf(msg.sender);
 
-        uint256 reserved = pool.tokenReserve[Constants.USDT];
+        require(liquidateAmount > usdtReserve, "E: needn't to liquidate");
 
-        require(liquidateAmount > reserved, "E: needn't to liquidate");
-
-        uint256 needToBeLiquidate = liquidateAmount - reserved;
+        uint256 needToBeLiquidate = liquidateAmount - usdtReserve;
 
         uint256 needToBeLiquidateTokenAmount = needToBeLiquidate / getTokenPrice(token);
 
-        if(needToBeLiquidateTokenAmount >= tokenReserve[token]) {
-            needToBeLiquidateTokenAmount = tokenReserve[token];
+        if(needToBeLiquidateTokenAmount >= poolReserve) {
+            needToBeLiquidateTokenAmount = poolReserve;
         } 
 
         pool.liquidate(token, needToBeLiquidateTokenAmount);
