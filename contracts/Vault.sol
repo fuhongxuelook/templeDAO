@@ -9,7 +9,6 @@ import {Factory} from "./Factory.sol";
 
 contract Vault is Ownable {
 
-    using Address for address;
     using TransferHelper for address;
 
     uint256 constant FEE_DENOMIRATOR = 10_000;

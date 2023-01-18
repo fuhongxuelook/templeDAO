@@ -95,7 +95,6 @@ contract Pool is Token {
         if(!allowed[toToken]) {
             revert TokenNotAllowed(toToken);
         }
-
         approveAllowance(router, tokenFrom, amount);
 
         uint256 balanceBefore = ERC20(toToken).balanceOf(address(this));
@@ -104,19 +103,38 @@ contract Pool is Token {
 
         uint256 balanceAfter = ERC20(toToken).balanceOf(address(this));
         uint256 realTradeAmount = balanceAfter - balanceBefore;
+
+
+        tokenReserve[fromToken] -= amount;
+        tokenReserve[toToken] += realTradeAmount;
+
         emit TradeTrace(fromToken, toToken, amount, realTradeAmount, block.timestamp);
     }  
 
     /// @dev liquidate token to USDT
-    function liquidate(address token, uint256 amount) external onlyVault {
+    function liquidate(
+        uint aggregatorIndex,
+        address token,
+        uint256 amount,
+        bytes calldata data
+    ) external onlyVault {
         require(token != Constants.USDT, "E: token cant be USDT");
 
         // mapping(address => uint256) public tokenReserve;
-        if(tokenReserve[token] >= amount) {
+        if(amount > tokenReserve[token]) {
             revert TokenReserveNotEnough(token);
         }
 
-        token.swap(token, Constants.USDT, amount);
+        uint256 balanceBefore = ERC20(Constants.USDT).balanceOf(address(this));
+
+        token.swap(aggregatorIndex, token, Constants.USDT, amount, data);
+
+        uint256 balanceAfter = ERC20(Constants.USDT).balanceOf(address(this));
+
+        uint256 realTradeAmount = balanceAfter - balanceBefore;
+        tokenReserve[toToken] -= amount;
+        tokenReserve[Constants.USDT] += realTradeAmount;
+
         return;
     }
 

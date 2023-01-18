@@ -7,14 +7,14 @@
 pragma solidity ^0.8.0;
 
 import "./AdapterManage.sol";
-import "./Performer.sol";
 import "./Libraries/TransferHelper.sol";
 import "./Libraries/Constants.sol";
 import "./Interface/SwapInterface.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 contract Swap is 
     SwapInterface, 
@@ -24,6 +24,7 @@ contract Swap is
     UUPSUpgradeable 
 {    
     using TransferHelper for address;
+    using Address for address;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
