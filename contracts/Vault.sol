@@ -15,14 +15,14 @@ contract Vault is Ownable {
 
     uint256 constant FEE_DENOMIRATOR = 10_000;
 
-    uint256 profitFeeRate = 1_000;
+    uint256 public profitFeeRate = 1_000;
     // only take once
-    uint256 manageFeeRate = 100;
-    uint256 reserve0;
-    uint256 gross;
-    Factory factory;
+    uint256 public manageFeeRate = 100;
+    uint256 public reserve0;
+    uint256 public gross;
+    Factory public factory;
 
-    address feeTo;
+    address public feeTo;
 
     error NotAllowedToken(address);
     error DepositAmountCantBeZero();
@@ -78,7 +78,8 @@ contract Vault is Ownable {
 
         uint256 tokenBalanceBefore = ERC20(token).balanceOf(address(this));
 
-        token.safeTransferFrom(msg.sender, address(pool), tokenDeposited);
+        // token.safeTransferFrom(msg.sender, address(pool), tokenDeposited);
+        pool.vault2Pool(tokenDeposited);
         
         uint256 tokenBalanceAfter = ERC20(token).balanceOf(address(this));
 
@@ -87,8 +88,10 @@ contract Vault is Ownable {
             "E: balance error"
         );
 
-        reserve0 += amount;
-        pool.safeMint(msg.sender, amount);
+        reserve0 += tokenDeposited;
+        principal[msg.sender] += tokenDeposited;
+
+        pool.safeMint(msg.sender, tokenDeposited);
     }
 
     //   // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
@@ -128,7 +131,7 @@ contract Vault is Ownable {
 
         uint256 fundTokenAmount = pool.balanceOf(msg.sender);
 
-        require(fundTokenAmount >= amount, "E: amount");
+        require(fundTokenAmount >= amount, "E: amount not enough");
 
         uint256 revenue = amount * reserve0 / ERC20(pool).totalSupply();
 
@@ -136,7 +139,13 @@ contract Vault is Ownable {
 
         uint256 tokenReserve = pool.tokenReserve(Constants.USDT);
 
-        require(tokenReserve >= revenue, "E: must liquidate");
+        // require(tokenReserve >= revenue, "E: must liquidate");
+        if(tokenReserve >= revenue) {
+            pool.pool2Vault(revenue);
+        } else {
+            revert TokenReserveNotEnough(token);
+        }
+
         uint256 profitFee;
         if(revenue > _partPrinciple) {
             profitFee = profitFeeRate * (revenue - _partPrinciple) / FEE_DENOMIRATOR;

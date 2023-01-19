@@ -55,7 +55,7 @@ contract Swap is
      * - tokenFrom cant be 0
      * - tokenTo cant be 0
      */
-    function swap(
+    function swap (
         uint256 aggregatorIndex,
         address tokenFrom,
         address tokenTo,

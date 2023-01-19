@@ -16,8 +16,8 @@ contract Pool is IPool, Token {
     uint256 public reserve;
     address public factory;
     address public vault;
-    Swap public swap;
     string poolname;
+    Swap public swap;
 
     mapping(address => bool) public allowed;
     address[] public allAllowed;// less change, can be complex
