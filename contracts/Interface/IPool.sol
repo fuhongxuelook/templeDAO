@@ -20,7 +20,7 @@ interface IPool {
 
     function tokenReserve(address token) external view returns(uint256);
 
-    function initialize(address _vault, string memory _name) external;
+    function initialize(address _vault, string memory _poolname, address _swap) external;
 
     /// @dev add allowed token 
     function addAllowed(address token) external;

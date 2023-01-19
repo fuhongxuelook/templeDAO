@@ -10,6 +10,7 @@ contract Factory {
     address public feeTo;
     address public feeToSetter;
     address public vault;
+    address public swap;
 
     mapping(uint256 => Pool) public getPool;
     Pool[] public allPools;
@@ -23,13 +24,13 @@ contract Factory {
         return allPools.length;
     }
 
-    function createPool(string memory poolname) external returns (Pool pool) {
+    function createPool(string memory poolname, address _swap) external returns (Pool pool) {
         bytes memory bytecode = type(Pool).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(poolname));
         assembly {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IPool(pool).initialize(vault, poolname);
+        IPool(pool).initialize(vault, poolname, _swap);
 
         uint256 length = allPools.length;
         getPool[length] = pool;

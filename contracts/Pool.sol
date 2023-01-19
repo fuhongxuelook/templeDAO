@@ -12,6 +12,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract Pool is IPool, Token {
 
     using TransferHelper for address;
+
     uint256 public reserve;
     address public factory;
     address public vault;
@@ -33,10 +34,11 @@ contract Pool is IPool, Token {
         _;
     }
 
-    function initialize(address _vault, string memory _poolname) external override {
+    function initialize(address _vault, string memory _poolname, address _swap) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         poolname = _poolname;
+        swap = Swap(payable(_swap));
 
         Constants.USDT.safeApprove(vault, type(uint256).max);
     }
