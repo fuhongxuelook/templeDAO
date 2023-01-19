@@ -6,15 +6,16 @@
 
 pragma solidity ^0.8.0;
 
-import "./AdapterManage.sol";
-import "./Libraries/TransferHelper.sol";
-import "./Libraries/Constants.sol";
-import "./Interface/SwapInterface.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {AdapterManage} from "./AdapterManage.sol";
+import {TransferHelper} from "./Libraries/TransferHelper.sol";
+import {Constants} from "./Libraries/Constants.sol";
+import {AdapterSet} from "./Libraries/AdapterSet.sol";
+import {SwapInterface} from "./Interface/SwapInterface.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 contract Swap is 
     SwapInterface, 
@@ -24,7 +25,7 @@ contract Swap is
     UUPSUpgradeable 
 {    
     using TransferHelper for address;
-    using Address for address;
+    using AddressUpgradeable for address;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -60,7 +61,7 @@ contract Swap is
         address tokenTo,
         uint256 amount,
         bytes calldata data
-    ) external payable override whenNotPaused nonReentrant {
+    ) public payable override whenNotPaused nonReentrant {
 
         // get router by register index
         AdapterSet.Adapter memory adapter = getAdapterByIndex(aggregatorIndex);
@@ -84,8 +85,24 @@ contract Swap is
         // now cant deal this call return data
         // we dont know what's type each aggregator returns
         adapter._router.functionCallWithValue(data, msg.value);
+    }
 
-        emit Swap(aggregatorIndex, tokenFrom, tokenTo, recipient, amount, block.timestamp);
+    /**
+     * @dev 
+     * 
+     * If Token is ETH, skip this
+     * Token Will be check allowance of address(this)
+     * if less than amount, approve max(uint256)
+     * 
+     */ 
+    function approveAllowance(address router, address token, uint256 amount) internal {
+        if(token == Constants.ETH) return;
+
+        uint256 allowance = IERC20Upgradeable(token).allowance(address(this), router);
+        if(allowance >= amount) {
+            return;
+        }
+        token.safeApprove(router, type(uint256).max);
     }
 
     /**

@@ -17,7 +17,7 @@ interface AdapterManageInterface {
      * - address name aggregator name
      * - uint date block.timestamp
      */ 
-    event RegisterAdapter(address indexed router, address indexed proxy, bytes32 name, uint256 date);
+    event RegisterAdapter(address indexed router, bytes32 name, uint256 date);
     
     /**
      * @dev log remove aggreagtor adapter
@@ -28,7 +28,7 @@ interface AdapterManageInterface {
      * - address name aggregator name
      * - uint date block.timestamp
      */ 
-    event RemoveAdapter(address indexed router, address indexed proxy, bytes32 name, uint256 date);
+    event RemoveAdapter(address indexed router, bytes32 name, uint256 date);
 
     /**
      * @dev register aggreagtor adapter
@@ -38,7 +38,7 @@ interface AdapterManageInterface {
      * - address proxy  router's proxy, like paraswap
      * - address name aggregator name
      */ 
-    function registerAdapter(address router, address proxy, bytes32 name) external;
+    function registerAdapter(address router, bytes32 name) external;
 
     /**
      * @dev remove aggreagtor adapter

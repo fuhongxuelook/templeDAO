@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import {Pool} from "./Pool.sol";
+import {IPool} from "./Interface/IPool.sol";
 
 contract Factory {
 
@@ -10,8 +11,8 @@ contract Factory {
     address public feeToSetter;
     address public vault;
 
-    mapping(uint256 => address) public getPool;
-    address[] public allPools;
+    mapping(uint256 => Pool) public getPool;
+    Pool[] public allPools;
 
     constructor(address _feeToSetter, address _vault) public {
         feeToSetter = _feeToSetter;
@@ -22,7 +23,7 @@ contract Factory {
         return allPools.length;
     }
 
-    function createPool(string memory poolname) external returns (address pool) {
+    function createPool(string memory poolname) external returns (Pool pool) {
         bytes memory bytecode = type(Pool).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(poolname));
         assembly {
@@ -30,10 +31,8 @@ contract Factory {
         }
         IPool(pool).initialize(vault, poolname);
 
-        require(getPool[pool] != 0, "E: pool existed");
-
         uint256 length = allPools.length;
-        getPool[length + 1] = pool;
+        getPool[length] = pool;
         allPools.push(pool);
     }
    

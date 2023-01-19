@@ -53,11 +53,5 @@ interface SwapInterface {
     ) external payable;
 
 
-    /**
-     * @dev change performer address
-     * 
-     * Params:
-     * - address new performer
-     */ 
-    function setPerformer(address newPerformer) external;
+  
 }

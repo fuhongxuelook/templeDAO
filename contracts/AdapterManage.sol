@@ -16,14 +16,11 @@ abstract contract AdapterManage is AdapterManageInterface, OwnableUpgradeable {
     
     // add router to router group 
     // router was stored in Adaper
-    function registerAdapter(address router, address proxy, bytes32 name) external override onlyOwner {
+    function registerAdapter(address router, bytes32 name) external override onlyOwner {
         require(router != address(0), "AdapterManage::registerAdapter : Router cant be zero");
-        require(proxy != address(0), "AdapterManage::registerAdapter: Proxy cant be zero");
 
-        AdapterSet.Adapter memory adapter = AdapterSet.Adapter(router, proxy, name);
+        AdapterSet.Adapter memory adapter = AdapterSet.Adapter(router, name);
         adapterSet.add(adapter);
-
-        emit RegisterAdapter(router, proxy, name, block.timestamp);
     }
 
     // remove router from router group
@@ -32,7 +29,6 @@ abstract contract AdapterManage is AdapterManageInterface, OwnableUpgradeable {
         require(adapter._router != address(0), "AdapterManage::removeAdapter : Index not exists");
 
         adapterSet.remove(adapter);
-        emit RemoveAdapter(adapter._router, adapter._proxy, adapter._name, block.timestamp);
     }
 
     // detect address is router and it's worked

@@ -3,8 +3,9 @@
 pragma solidity ^0.8.0;
 
 import {Constants} from "./Libraries/Constants.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {TransferHelper} from "./Libraries/TransferHelper.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Factory} from "./Factory.sol";
 import {Pool} from "./Pool.sol";
 
@@ -45,7 +46,7 @@ contract Vault is Ownable {
     // }
 
     constructor(address _factory) {
-        factory = _factory;
+        factory = Factory(_factory);
     }
    
     receive() external payable {}
@@ -65,7 +66,7 @@ contract Vault is Ownable {
         }
 
         // low round
-        uint256 manageFeeAmount = amount * manageFee / FEE_DENOMIRATOR;
+        uint256 manageFeeAmount = amount * manageFeeRate / FEE_DENOMIRATOR;
 
         if(manageFeeAmount > 0) {
             token.safeTransferFrom(msg.sender, feeTo, manageFeeAmount);
@@ -73,7 +74,7 @@ contract Vault is Ownable {
 
         uint256 tokenDeposited = amount - manageFeeAmount;
 
-        address pool = factory.getPool(poolid);
+        Pool pool = factory.getPool(poolid);
 
         uint256 tokenBalanceBefore = ERC20(token).balanceOf(address(this));
 
@@ -86,28 +87,27 @@ contract Vault is Ownable {
             "E: balance error"
         );
 
-        tokenReserve[token] += tokenDeposited;
-        reserve0 += tokenDeposied;
-        pool.safeMint(msg.sender, tokenDeposited);
+        reserve0 += amount;
+        pool.safeMint(msg.sender, amount);
     }
 
-      // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
-    function _mintFee(uint256 amount) private returns (bool feeOn) {
-        address feeTo = IUniswapV2Factory(factory).feeTo();
-        feeOn = feeTo != address(0);
-        uint _reserve0 = reserve0; // gas savings
-        uint _reserve0Last = _reserve0 - amount;
-        if (feeOn) {
-            if (_reserve0Last != 0) {
-                if (_reserve0 > _reserve0Last) {
-                    uint numerator = totalSupply.mul(_reserve0.sub(_reserve0Last));
-                    uint denominator = _reserve0.mul(5).add(_reserve0Last);
-                    uint liquidity = numerator / denominator;
-                    if (liquidity > 0) _mint(feeTo, liquidity);
-                }
-            }
-        } 
-    }
+    //   // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+    // function _mintFee(uint256 amount) private returns (bool feeOn) {
+    //     address feeTo = IUniswapV2Factory(factory).feeTo();
+    //     feeOn = feeTo != address(0);
+    //     uint _reserve0 = reserve0; // gas savings
+    //     uint _reserve0Last = _reserve0 - amount;
+    //     if (feeOn) {
+    //         if (_reserve0Last != 0) {
+    //             if (_reserve0 > _reserve0Last) {
+    //                 uint numerator = totalSupply.mul(_reserve0.sub(_reserve0Last));
+    //                 uint denominator = _reserve0.mul(5).add(_reserve0Last);
+    //                 uint liquidity = numerator / denominator;
+    //                 if (liquidity > 0) _mint(feeTo, liquidity);
+    //             }
+    //         }
+    //     } 
+    // }
 
     // function withdrawETH() external {
     //     uint256 fundTokenAmount = ERC20(address(this)).balanceOf(msg.sender);
@@ -130,11 +130,13 @@ contract Vault is Ownable {
 
         require(fundTokenAmount >= amount, "E: amount");
 
-        uint256 revenue = amount * reserve0 / totalSupply();
+        uint256 revenue = amount * reserve0 / ERC20(pool).totalSupply();
 
         uint256 _partPrinciple = amount * principal[msg.sender] / fundTokenAmount;
 
-        require(tokenReserve[USDT] >= revenue, "E: must liquidate");
+        uint256 tokenReserve = pool.tokenReserve(Constants.USDT);
+
+        require(tokenReserve >= revenue, "E: must liquidate");
         uint256 profitFee;
         if(revenue > _partPrinciple) {
             profitFee = profitFeeRate * (revenue - _partPrinciple) / FEE_DENOMIRATOR;
@@ -191,11 +193,13 @@ contract Vault is Ownable {
 
         uint256 needToBeLiquidateTokenAmount = needToBeLiquidate / getTokenPrice(token);
 
+
+        uint256 poolReserve = pool.reserve();
         if(needToBeLiquidateTokenAmount >= poolReserve) {
             needToBeLiquidateTokenAmount = poolReserve;
         } 
 
-        pool.liquidate(token, needToBeLiquidateTokenAmount);
+        pool.liquidate(aggregatorIndex, token, needToBeLiquidateTokenAmount, data);
 
         return;
     }

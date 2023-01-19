@@ -2,30 +2,25 @@
 
 pragma solidity ^0.8.0;
 
-import {Constants} from "./Libraries/Constants.sol";
-import {Token} from "./Token.sol";
 import {Swap} from "./Swap.sol";
+import {Token} from "./Token.sol";
+import {IPool} from "./Interface/IPool.sol";
+import {TransferHelper} from "./Libraries/TransferHelper.sol";
+import {Constants} from "./Libraries/Constants.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Pool is Token {
+contract Pool is IPool, Token {
 
+    using TransferHelper for address;
     uint256 public reserve;
     address public factory;
     address public vault;
-    string name;
-
-    event TradeTrace(
-        address fromToken, 
-        address toToken, 
-        uint256 fromAmount, 
-        uint256 toAmount,
-        uint256 blockTime
-    );
+    Swap public swap;
+    string poolname;
 
     mapping(address => bool) public allowed;
     address[] public allAllowed;// less change, can be complex
-    mapping(address => uint256) public tokenReserve;
-
-    error TokenNotAllowed(address token);
+    mapping(address => uint256) public override tokenReserve;
 
     constructor() {
         factory = msg.sender;
@@ -38,10 +33,10 @@ contract Pool is Token {
         _;
     }
 
-    function initialize(address _vault, string _name) external override {
+    function initialize(address _vault, string memory _poolname) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
-        name = _name;
+        poolname = _poolname;
 
         Constants.USDT.safeApprove(vault, type(uint256).max);
     }
@@ -80,28 +75,28 @@ contract Pool is Token {
     }
 
     /// @dev get pool name
-    function getName() external view override returns (string) {
-        return name;
+    function getPoolName() external view override returns (string memory) {
+        return poolname;
     }
 
     /// @dev trade token to other token
     function trade(
         uint aggregatorIndex,
-        address tokenFrom,
-        address tokenTo,
+        address fromToken,
+        address toToken,
         uint256 amount,
         bytes calldata data
-    ) external override onlyOwner {
+    ) external override {
         if(!allowed[toToken]) {
             revert TokenNotAllowed(toToken);
         }
-        approveAllowance(router, tokenFrom, amount);
+        approveAllowance(address(swap), fromToken, amount);
 
-        uint256 balanceBefore = ERC20(toToken).balanceOf(address(this));
+        uint256 balanceBefore = IERC20(toToken).balanceOf(address(this));
 
-        Swap.swap(aggregatorIndex, tokenFrom, tokenTo, amount, data);
+        swap.swap(aggregatorIndex, fromToken, toToken, amount, data);
 
-        uint256 balanceAfter = ERC20(toToken).balanceOf(address(this));
+        uint256 balanceAfter = IERC20(toToken).balanceOf(address(this));
         uint256 realTradeAmount = balanceAfter - balanceBefore;
 
 
@@ -125,14 +120,14 @@ contract Pool is Token {
             revert TokenReserveNotEnough(token);
         }
 
-        uint256 balanceBefore = ERC20(Constants.USDT).balanceOf(address(this));
+        uint256 balanceBefore = IERC20(Constants.USDT).balanceOf(address(this));
 
-        token.swap(aggregatorIndex, token, Constants.USDT, amount, data);
+        swap.swap(aggregatorIndex, token, Constants.USDT, amount, data);
 
-        uint256 balanceAfter = ERC20(Constants.USDT).balanceOf(address(this));
+        uint256 balanceAfter = IERC20(Constants.USDT).balanceOf(address(this));
 
         uint256 realTradeAmount = balanceAfter - balanceBefore;
-        tokenReserve[toToken] -= amount;
+        tokenReserve[token] -= amount;
         tokenReserve[Constants.USDT] += realTradeAmount;
 
         return;
@@ -141,23 +136,23 @@ contract Pool is Token {
 
     /// @dev vault take USDT from pool
     function pool2Vault(uint256 amount) external override onlyVault {
-        USDT.safeTransfer(msg.sender, amount);
+        Constants.USDT.safeTransfer(msg.sender, amount);
 
         reserve -= amount;
     }
 
     /// @dev vault send USDT to pool
     function vault2Pool(uint256 amount) external override onlyVault {
-        USDT.safeTransferFrom(msg.sender, address(this), amount);
+        Constants.USDT.safeTransferFrom(msg.sender, address(this), amount);
 
         reserve += amount;
     }
 
     /// @dev skim reserve and balance;
     function skim() external {
-        uint256 balance = ERC20(USDT).balanceOf(address(this));
+        uint256 balance = IERC20(Constants.USDT).balanceOf(address(this));
         if(balance >= reserve) {
-            USDT.safeTransfer(msg.sender, balance - reserve);
+            Constants.USDT.safeTransfer(msg.sender, balance - reserve);
         }
     }
 
@@ -171,7 +166,7 @@ contract Pool is Token {
 
     // force reserves to match balances
     function sync() external {
-        reserve = ERC20(USDT).balanceOf(address(this));
+        reserve = IERC20(Constants.USDT).balanceOf(address(this));
     }
 
     /// @dev mint token

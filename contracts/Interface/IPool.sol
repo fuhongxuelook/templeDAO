@@ -13,9 +13,14 @@ interface IPool {
     );
 
     error TokenNotAllowed(address token);
+    error AddressCantBeZero();
+    error TokenReserveNotEnough(address);
 
+    // mapping(address => uint256) public tokenReserve;
 
-    function initialize(address _vault, string _name) external;
+    function tokenReserve(address token) external view returns(uint256);
+
+    function initialize(address _vault, string memory _name) external;
 
     /// @dev add allowed token 
     function addAllowed(address token) external;
@@ -24,7 +29,7 @@ interface IPool {
     function removeAllowed(address token) external;
 
     /// @dev get pool name
-    function getName() external view returns (string);
+    function getPoolName() external view returns (string memory);
 
     /// @dev trade token to other token
     function trade(
