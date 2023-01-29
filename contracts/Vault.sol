@@ -156,14 +156,26 @@ contract Vault is Ownable {
         Pool pool = Pool(payable(factory.getPoolById(poolid)));
         if(address(pool) == address(0))  revert AddressCantBeZero();
 
+        uint256 needToBeLiquidateTokenAmount = tokenNeedLiquidate(token, msg.sender, pool);
+
+        require(needToBeLiquidateTokenAmount >= amount, "E: amount not rigth"); 
+
+        pool.liquidate(aggregatorIndex, token, needToBeLiquidateTokenAmount, data);
+
+        return;
+    }
+
+    /// @dev token amount need to be liquidate in account
+    function tokenNeedLiquidate(address token, address account, Pool pool) public view returns (uint256) {
+
         uint256 tokenReserve = pool.tokenReserve(token);
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
 
         if(tokenReserve == 0) revert TokenReserveNotEnough(token);
 
-        uint256 poolTokenBalance = pool.balanceOf(msg.sender);
+        uint256 poolTokenBalance = pool.balanceOf(account);
 
-        require(poolTokenBalance > usdtReserve, "E: needn't to liquidate");
+        if(poolTokenBalance <= usdtReserve) return 0;
 
         uint256 needToBeLiquidate = poolTokenBalance - usdtReserve;
 
@@ -174,10 +186,6 @@ contract Vault is Ownable {
             needToBeLiquidateTokenAmount = tokenReserve;
         } 
 
-        require(needToBeLiquidateTokenAmount >= amount, "E: amount not rigth"); 
-
-        pool.liquidate(aggregatorIndex, token, needToBeLiquidateTokenAmount, data);
-
-        return;
+        return needToBeLiquidateTokenAmount;
     }
 }
