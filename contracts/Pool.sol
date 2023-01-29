@@ -16,7 +16,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     using TransferHelper for address;
     using SafeMath for uint256;
 
-    uint256 public reserve;
+    uint256 public usdtIN;
+    uint256 public usdtOUT;
     address public factory;
     address public vault;
     string poolname;
@@ -169,35 +170,14 @@ contract Pool is IPool, Token, ChainlinkOracle {
     function pool2Vault(uint256 amount) external override onlyVault {
         Constants.USDT.safeTransfer(msg.sender, amount);
 
-        reserve -= amount;
+        usdtOUT += amount;
     }
 
     /// @dev vault send USDT to pool
     function vault2Pool(uint256 amount) external override onlyVault {
         Constants.USDT.safeTransferFrom(msg.sender, address(this), amount);
 
-        reserve += amount;
-    }
-
-    /// @dev skim reserve and balance;
-    function skim() external {
-        uint256 balance = IERC20(Constants.USDT).balanceOf(address(this));
-        if(balance >= reserve) {
-            Constants.USDT.safeTransfer(msg.sender, balance - reserve);
-        }
-    }
-
-    // // force balances to match reserves
-    // function skim(address to) external lock {
-    //     address _token0 = token0; // gas savings
-    //     address _token1 = token1; // gas savings
-    //     _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));
-    //     _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));
-    // }
-
-    // force reserves to match balances
-    function sync() external {
-        reserve = IERC20(Constants.USDT).balanceOf(address(this));
+        usdtIN += amount;
     }
 
     /// @dev mint token
