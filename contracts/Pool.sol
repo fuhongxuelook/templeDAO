@@ -7,11 +7,14 @@ import {Token} from "./Token.sol";
 import {IPool} from "./Interface/IPool.sol";
 import {TransferHelper} from "./Libraries/TransferHelper.sol";
 import {Constants} from "./Libraries/Constants.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ChainlinkOracle} from "./ChainlinkOracle.sol";
 
-contract Pool is IPool, Token {
+contract Pool is IPool, Token, ChainlinkOracle {
 
     using TransferHelper for address;
+    using SafeMath for uint256;
 
     uint256 public reserve;
     address public factory;
@@ -22,6 +25,20 @@ contract Pool is IPool, Token {
     mapping(address => bool) public allowed;
     address[] public allAllowed;// less change, can be complex
     mapping(address => uint256) public override tokenReserve;
+
+
+    event TradeTrace(
+        address fromToken, 
+        address toToken, 
+        uint256 fromAmount, 
+        uint256 toAmount,
+        uint256 blockTime
+    );
+
+    error TokenNotAllowed(address token);
+    error AddressCantBeZero();
+    error TokenReserveNotEnough(address);
+
 
     constructor() {
         factory = msg.sender;
@@ -34,12 +51,17 @@ contract Pool is IPool, Token {
         _;
     }
 
-    function initialize(address _vault, string memory _poolname, address _swap) external override {
+    function initialize(string memory _poolname, address _vault, address _swap) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         poolname = _poolname;
         swap = Swap(payable(_swap));
 
+        Constants.USDT.safeApprove(vault, type(uint256).max);
+    }
+
+    /// @dev keep enough allowance to vault
+    function approveToVault() external {
         Constants.USDT.safeApprove(vault, type(uint256).max);
     }
 
@@ -89,9 +111,7 @@ contract Pool is IPool, Token {
         uint256 amount,
         bytes calldata data
     ) external override {
-        if(!allowed[toToken]) {
-            revert TokenNotAllowed(toToken);
-        }
+        if(!allowed[toToken]) revert TokenNotAllowed(toToken);
         approveAllowance(address(swap), fromToken, amount);
 
         uint256 balanceBefore = IERC20(toToken).balanceOf(address(this));
@@ -118,9 +138,7 @@ contract Pool is IPool, Token {
         require(token != Constants.USDT, "E: token cant be USDT");
 
         // mapping(address => uint256) public tokenReserve;
-        if(amount > tokenReserve[token]) {
-            revert TokenReserveNotEnough(token);
-        }
+        if(amount > tokenReserve[token]) revert TokenReserveNotEnough(token);
 
         uint256 balanceBefore = IERC20(Constants.USDT).balanceOf(address(this));
 
@@ -180,4 +198,31 @@ contract Pool is IPool, Token {
     function safeBurn(address account, uint256 amount) external override onlyVault {
         _burn(account, amount);
     }
+
+
+    /// @dev get pool tokens value
+    function getTokenReserveValue() public view returns (uint256 value) {
+        uint256 allAllowedLength = allAllowed.length;
+
+        if(allAllowedLength == 0) return 0;
+
+        for(uint256 i; i < allAllowedLength; ++i) {
+            address t_token = allAllowed[i];
+            uint256 t_tokenReserve = tokenReserve[t_token];
+            if(t_tokenReserve <= 1000) continue;
+            if(t_token == Constants.USDT) {
+                value  = value.add(t_tokenReserve);
+                continue;
+            }
+            uint256 t_tokenPrice = uint256(getLatestPrice(t_token));
+            value = value.add(t_tokenReserve.mul(t_tokenPrice));
+        }
+    }
+
+    function setPriceFeed(address token, address feed) external override onlyVault {
+        require(token == address(0) || feed == address(0), "E: error");
+
+        priceFeeds[token] = feed;
+    }
+
 }

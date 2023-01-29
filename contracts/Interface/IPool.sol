@@ -3,24 +3,11 @@
 pragma solidity ^0.8.0;
 
 interface IPool {
-
-    event TradeTrace(
-        address fromToken, 
-        address toToken, 
-        uint256 fromAmount, 
-        uint256 toAmount,
-        uint256 blockTime
-    );
-
-    error TokenNotAllowed(address token);
-    error AddressCantBeZero();
-    error TokenReserveNotEnough(address);
-
     // mapping(address => uint256) public tokenReserve;
 
     function tokenReserve(address token) external view returns(uint256);
 
-    function initialize(address _vault, string memory _poolname, address _swap) external;
+    function initialize(string memory _poolname, address _vault, address _swap) external;
 
     /// @dev add allowed token 
     function addAllowed(address token) external;

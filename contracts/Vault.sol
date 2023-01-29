@@ -6,12 +6,14 @@ import {Constants} from "./Libraries/Constants.sol";
 import {TransferHelper} from "./Libraries/TransferHelper.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {Factory} from "./Factory.sol";
 import {Pool} from "./Pool.sol";
 
 contract Vault is Ownable {
 
     using TransferHelper for address;
+    using SafeMath for uint256;
 
     uint256 constant FEE_DENOMIRATOR = 10_000;
 
@@ -26,6 +28,7 @@ contract Vault is Ownable {
 
     error NotAllowedToken(address);
     error DepositAmountCantBeZero();
+    error WithdrawAmountCantBeZero();
     error AddressCantBeZero();
     error TokenReserveNotEnough(address);
 
@@ -37,105 +40,67 @@ contract Vault is Ownable {
     // address token => bool status
     mapping(address => bool) public allowed;
 
-    // function depositETH() external payable {
-    //     uint256 ethWorth = price * msg.value;
-    //     tvl += ethWorth;
-
-    //     tokens[Constants.ETH] += amount;
-    //     lp.safeMint(msg.sender, amount);
-    // }
-
     constructor(address _factory) {
         factory = Factory(_factory);
     }
    
     receive() external payable {}
 
-
     function getReserve0() public view returns (uint256) {
         return reserve0;
     }
 
+    event Deposit(
+        address token, 
+        address account, 
+        address pool, 
+        uint256 amount,
+        uint256 blockTime
+    );
+
     function deposit(address token, uint256 amount, uint256 poolid) external {
-        if(!allowed[token]) {
-            revert NotAllowedToken(token);
-        }
+        if(!allowed[token]) revert NotAllowedToken(token);
 
-        if(amount == 0) {
-            revert DepositAmountCantBeZero();
-        }
+        if(amount == 0) revert DepositAmountCantBeZero();
 
-        // low round
-        uint256 manageFeeAmount = amount * manageFeeRate / FEE_DENOMIRATOR;
+        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        if(address(pool) == address(0)) revert AddressCantBeZero();
 
-        if(manageFeeAmount > 0) {
-            token.safeTransferFrom(msg.sender, feeTo, manageFeeAmount);
-        }
-
-        uint256 tokenDeposited = amount - manageFeeAmount;
-
-        Pool pool = factory.getPool(poolid);
-
-        uint256 tokenBalanceBefore = ERC20(token).balanceOf(address(this));
+        token.safeTransferFrom(msg.sender, address(this), amount);
 
         // token.safeTransferFrom(msg.sender, address(pool), tokenDeposited);
-        pool.vault2Pool(tokenDeposited);
+        pool.vault2Pool(amount);
         
-        uint256 tokenBalanceAfter = ERC20(token).balanceOf(address(this));
+        // low round
+        uint256 manageFeeAmount = amount.mul(manageFeeRate).div(FEE_DENOMIRATOR);
 
-        require(
-            tokenBalanceAfter - tokenBalanceBefore >= tokenDeposited, 
-            "E: balance error"
-        );
+        uint256 tokenDeposited = amount.sub(manageFeeAmount);
 
-        reserve0 += tokenDeposited;
-        principal[msg.sender] += tokenDeposited;
+        gross = gross.add(amount);
+        principal[msg.sender] = principal[msg.sender].add(tokenDeposited);
 
         pool.safeMint(msg.sender, tokenDeposited);
+        pool.safeMint(feeTo, manageFeeAmount);
+
+        emit Deposit(token, msg.sender, address(pool), amount, block.timestamp);
     }
 
-    //   // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
-    // function _mintFee(uint256 amount) private returns (bool feeOn) {
-    //     address feeTo = IUniswapV2Factory(factory).feeTo();
-    //     feeOn = feeTo != address(0);
-    //     uint _reserve0 = reserve0; // gas savings
-    //     uint _reserve0Last = _reserve0 - amount;
-    //     if (feeOn) {
-    //         if (_reserve0Last != 0) {
-    //             if (_reserve0 > _reserve0Last) {
-    //                 uint numerator = totalSupply.mul(_reserve0.sub(_reserve0Last));
-    //                 uint denominator = _reserve0.mul(5).add(_reserve0Last);
-    //                 uint liquidity = numerator / denominator;
-    //                 if (liquidity > 0) _mint(feeTo, liquidity);
-    //             }
-    //         }
-    //     } 
-    // }
-
-    // function withdrawETH() external {
-    //     uint256 fundTokenAmount = ERC20(address(this)).balanceOf(msg.sender);
-    //     uint256 amount = fundTokenAmount * reserve0 / totalSupply();
-    //     uint256 ethAmount = amount / price;
-
-    //     payable(msg.sender).transfer(ethAmount);
-
-    //     lp.safeBurn(msg.sender, fundTokenAmount);
-    // }
-
     function withdraw(address token, uint256 amount, uint256 poolid) external {
-        if(!allowed[token]) {
-            revert NotAllowedToken(token);
-        }
+        if(!allowed[token]) revert NotAllowedToken(token);
+        if(amount == 0) revert WithdrawAmountCantBeZero();
 
-        Pool pool = factory.getPool(poolid);
+        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        if(address(pool) == address(0)) revert AddressCantBeZero();
 
-        uint256 fundTokenAmount = pool.balanceOf(msg.sender);
+        uint256 poolTokenBalance = pool.balanceOf(msg.sender);
 
-        require(fundTokenAmount >= amount, "E: amount not enough");
+        require(poolTokenBalance >= amount, "E: amount not enough");
 
-        uint256 revenue = amount * reserve0 / ERC20(pool).totalSupply();
+        uint256 poolTokenSupply = pool.totalSupply();
 
-        uint256 _partPrinciple = amount * principal[msg.sender] / fundTokenAmount;
+        uint256 revenue = amount.mul(reserve0).div(poolTokenSupply);
+
+        uint256 _partPrinciple = amount.mul(principal[msg.sender]).div(poolTokenBalance);
 
         uint256 tokenReserve = pool.tokenReserve(Constants.USDT);
 
@@ -149,7 +114,8 @@ contract Vault is Ownable {
         uint256 profitFee;
         if(revenue > _partPrinciple) {
             profitFee = profitFeeRate * (revenue - _partPrinciple) / FEE_DENOMIRATOR;
-            Constants.USDT.safeTransfer(feeTo, profitFee);
+            //Constants.USDT.safeTransfer(feeTo, profitFee);
+            pool.safeMint(feeTo, profitFee);
         }
 
         Constants.USDT.safeTransfer(msg.sender, revenue - _partPrinciple);
@@ -157,6 +123,7 @@ contract Vault is Ownable {
         pool.safeBurn(msg.sender, amount);
     }
 
+    /// @dev add allowed token
     function addTokenAllowed(address token) external onlyOwner {
         if(token == address(0)) {
             revert AddressCantBeZero();
@@ -165,6 +132,7 @@ contract Vault is Ownable {
         allowed[token] = true;
     }
 
+    /// @dev remove allowed token
     function removeTokenAllowed(address token) external onlyOwner {
         if(token == address(0)) {
             revert AddressCantBeZero();
@@ -185,20 +153,19 @@ contract Vault is Ownable {
         bytes calldata data
     ) external {
         // mapping(address => uint256) public tokenReserve;
-        Pool pool = factory.getPool(poolid);
+        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        if(address(pool) == address(0))  revert AddressCantBeZero();
 
         uint256 tokenReserve = pool.tokenReserve(token);
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
 
-        if(tokenReserve == 0) {
-            revert TokenReserveNotEnough(token);
-        }
+        if(tokenReserve == 0) revert TokenReserveNotEnough(token);
 
-        uint256 liquidateAmount = pool.balanceOf(msg.sender);
+        uint256 poolTokenBalance = pool.balanceOf(msg.sender);
 
-        require(liquidateAmount > usdtReserve, "E: needn't to liquidate");
+        require(poolTokenBalance > usdtReserve, "E: needn't to liquidate");
 
-        uint256 needToBeLiquidate = liquidateAmount - usdtReserve;
+        uint256 needToBeLiquidate = poolTokenBalance - usdtReserve;
 
         uint256 needToBeLiquidateTokenAmount = needToBeLiquidate / getTokenPrice(token);
 
@@ -207,6 +174,8 @@ contract Vault is Ownable {
         if(needToBeLiquidateTokenAmount >= poolReserve) {
             needToBeLiquidateTokenAmount = poolReserve;
         } 
+
+        require(needToBeLiquidateTokenAmount >= amount, "E: amount not rigth"); 
 
         pool.liquidate(aggregatorIndex, token, needToBeLiquidateTokenAmount, data);
 
