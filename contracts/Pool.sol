@@ -114,11 +114,11 @@ contract Pool is IPool, Token, ChainlinkOracle {
         if(!allowed[toToken]) revert TokenNotAllowed(toToken);
         approveAllowance(address(swap), fromToken, amount);
 
-        uint256 balanceBefore = IERC20(toToken).balanceOf(address(this));
+        uint256 balanceBefore = currentBalance(toToken);
 
         swap.swap(aggregatorIndex, fromToken, toToken, amount, data);
 
-        uint256 balanceAfter = IERC20(toToken).balanceOf(address(this));
+        uint256 balanceAfter = currentBalance(toToken);
         uint256 realTradeAmount = balanceAfter - balanceBefore;
 
 
@@ -127,6 +127,17 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
         emit TradeTrace(fromToken, toToken, amount, realTradeAmount, block.timestamp);
     }  
+
+    /// @dev get token balance 
+    function currentBalance(address token) internal view returns (uint256) {
+        require(token != address(0), "E: error");
+
+        if(token == Constants.ETH) {
+            return address(this).balance;
+        }
+
+        return IERC20(token).balanceOf(address(this));
+    }
 
     /// @dev liquidate token to USDT
     function liquidate(
