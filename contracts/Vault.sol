@@ -158,7 +158,11 @@ contract Vault is Ownable {
 
         uint256 needToBeLiquidateTokenAmount = tokenNeedLiquidate(token, msg.sender, pool);
 
-        require(needToBeLiquidateTokenAmount >= amount, "E: amount not rigth"); 
+        require(needToBeLiquidateTokenAmount > 0 && amount > 0, "E: error");
+
+        if(needToBeLiquidateTokenAmount > amount) {
+            needToBeLiquidateTokenAmount = amount;
+        }        
 
         pool.liquidate(aggregatorIndex, token, needToBeLiquidateTokenAmount, data);
 
@@ -180,7 +184,6 @@ contract Vault is Ownable {
         uint256 needToBeLiquidate = poolTokenBalance - usdtReserve;
 
         uint256 needToBeLiquidateTokenAmount = needToBeLiquidate.div(uint256(pool.getLatestPrice(token)));
-
 
         if(needToBeLiquidateTokenAmount >= tokenReserve) {
             needToBeLiquidateTokenAmount = tokenReserve;
