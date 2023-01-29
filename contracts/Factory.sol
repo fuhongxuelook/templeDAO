@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import {Pool} from "./Pool.sol";
 import {IPool} from "./Interface/IPool.sol";
 
 contract Factory { 
