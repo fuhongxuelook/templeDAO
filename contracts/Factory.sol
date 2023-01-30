@@ -35,6 +35,8 @@ contract Factory {
         return allPools.length;
     }
 
+
+    /// @dev get pool address via id
     function getPoolById(uint256 id) public view returns (address) {
         if(id > allPools.length - 1) {
             return address(0); 
@@ -44,7 +46,7 @@ contract Factory {
     }
 
 
-    /// @dev get pool address by poolname
+    /// @dev get pool address via poolname
     function getPoolByName(string memory poolname) public view returns (address) {
         bytes32 salt = keccak256(abi.encodePacked(poolname));
 

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import {Swap} from "./Swap.sol";
+import {Swap} from "./Dex/Swap.sol";
 import {Token} from "./Token.sol";
 import {IPool} from "./Interface/IPool.sol";
 import {TransferHelper} from "./Libraries/TransferHelper.sol";
@@ -24,9 +24,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     Swap public swap;
 
     mapping(address => bool) public allowed;
-    address[] public allAllowed;// less change, can be complex
+    address[] public allAllowed;                                // less change, can be complex
     mapping(address => uint256) public override tokenReserve;
-
 
     event TradeTrace(
         address fromToken, 

@@ -7,10 +7,10 @@
 pragma solidity ^0.8.0;
 
 import {AdapterManage} from "./AdapterManage.sol";
-import {TransferHelper} from "./Libraries/TransferHelper.sol";
-import {Constants} from "./Libraries/Constants.sol";
-import {AdapterSet} from "./Libraries/AdapterSet.sol";
-import {SwapInterface} from "./Interface/SwapInterface.sol";
+import {TransferHelper} from "../Libraries/TransferHelper.sol";
+import {Constants} from "../Libraries/Constants.sol";
+import {AdapterSet} from "../Libraries/AdapterSet.sol";
+import {SwapInterface} from "../Interface/SwapInterface.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";

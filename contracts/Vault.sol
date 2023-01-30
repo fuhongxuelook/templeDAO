@@ -25,13 +25,7 @@ contract Vault is Ownable {
     Factory public factory;
 
     address public feeTo;
-
-    error NotAllowedToken(address);
-    error DepositAmountCantBeZero();
-    error WithdrawAmountCantBeZero();
-    error AddressCantBeZero();
-    error TokenReserveNotEnough(address);
-
+  
     // address token => reserve amount
     mapping(address => uint256) public poolSend;
     mapping(address => uint256) public poolGet;
@@ -39,6 +33,21 @@ contract Vault is Ownable {
     mapping(address => uint256) public principal;
     // address token => bool status
     mapping(address => bool) public allowed;
+
+    event Deposit(
+        address token, 
+        address account, 
+        address pool, 
+        uint256 amount,
+        uint256 blockTime
+    );
+
+    error NotAllowedToken(address);
+    error DepositAmountCantBeZero();
+    error WithdrawAmountCantBeZero();
+    error AddressCantBeZero();
+    error TokenReserveNotEnough(address);
+
 
     constructor(address _factory) {
         factory = Factory(_factory);
@@ -49,14 +58,6 @@ contract Vault is Ownable {
     function getReserve0() public view returns (uint256) {
         return reserve0;
     }
-
-    event Deposit(
-        address token, 
-        address account, 
-        address pool, 
-        uint256 amount,
-        uint256 blockTime
-    );
 
     function deposit(address token, uint256 amount, uint256 poolid) external {
         if(!allowed[token]) revert NotAllowedToken(token);

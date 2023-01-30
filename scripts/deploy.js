@@ -1,26 +1,50 @@
 // We require the Hardhat Runtime Environment explicitly here. This is optional
 // but useful for running the script in a standalone fashion through `node <script>`.
 //
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
+// When running the script with `npx hardhat run <script>` you'll find the Hardhat
+// Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  // Hardhat always runs the compile task when running scripts with its command
+  // line interface.
+  //
+  // If this script is run directly using `node` you may want to call compile
+  // manually to make sure everything is compiled
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
+  await hre.run('compile');
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  let provider = ethers.provider;
+  let signer = provider.getSigner();
 
-  await lock.deployed();
+  let my_address = await signer.getAddress();
 
-  console.log(
-    `Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
+  console.log("my address ", my_address);
+
+  // const Committee = await hre.ethers.getContractFactory("Committee");
+  // const committee = await Committee.deploy()
+
+  // console.log("committee address is:", committee.address)
+
+  // let implement = committee.address;
+
+  let implement = "0x5bF3D8485077e63cE15A4d3BF18a0ff7414E6590";
+  const abi = [
+    "function initialize() external"
+  ];
+  const initialize = new ethers.Contract(implement, abi, signer);
+
+  let tx = await initialize.populateTransaction.initialize();
+  let data = tx.data
+
+  console.log("data is", tx.data);
+
+  const SaviProxy = await hre.ethers.getContractFactory("SaviProxy");
+  const proxy = await SaviProxy.deploy(implement, data)
+
+  console.log("proxy address is:", proxy.address)
+
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

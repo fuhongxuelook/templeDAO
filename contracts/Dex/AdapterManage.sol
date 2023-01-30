@@ -5,7 +5,7 @@
  */
 pragma solidity ^0.8.0;
 
-import "./Interface/AdapterManageInterface.sol";
+import "../Interface/AdapterManageInterface.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 abstract contract AdapterManage is AdapterManageInterface, OwnableUpgradeable {
