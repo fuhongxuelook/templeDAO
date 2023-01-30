@@ -162,7 +162,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 realTradeAmount = balanceAfter - balanceBefore;
 
          if(realTradeAmount == 0) revert SwapError();
-         
+
         tokenReserve[token] -= amount;
         tokenReserve[Constants.USDT] += realTradeAmount;
 
@@ -210,7 +210,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
                 continue;
             }
             uint256 t_tokenPrice = uint256(getLatestPrice(t_token));
-            value = value.add(t_tokenReserve.mul(t_tokenPrice));
+            value = value.add(t_tokenReserve.mul(t_tokenPrice).div(1E8));
         }
     }
 
