@@ -21,14 +21,13 @@ async function main() {
 
   console.log("my address ", my_address);
 
-  // const Committee = await hre.ethers.getContractFactory("Committee");
-  // const committee = await Committee.deploy()
+  const Swap = await hre.ethers.getContractFactory("Swap");
+  const swap = await Swap.deploy()
 
-  // console.log("committee address is:", committee.address)
+  console.log("swap address is:", swap.address)
 
-  // let implement = committee.address;
+  let implement = swap.address;
 
-  let implement = "0x5bF3D8485077e63cE15A4d3BF18a0ff7414E6590";
   const abi = [
     "function initialize() external"
   ];
