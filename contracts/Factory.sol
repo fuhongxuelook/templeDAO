@@ -10,7 +10,7 @@ contract Factory {
     address public feeTo;
 
     /// fee recipient address setter
-    address public feeToSetter;
+    address public owner;
 
     /// vault address
     address public vault;
@@ -24,9 +24,24 @@ contract Factory {
     /// all pools
     address[] allPools;
 
-    constructor(address _feeToSetter, address _vault, address _swap) {
-        feeToSetter = _feeToSetter;
+    constructor() {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "E: error");
+        _; 
+    }
+
+    /// @dev vault
+    function setVault(address _vault) external onlyOwner {
+        require(_vault != address(0), "E: error");
         vault = _vault;
+    }
+
+    /// @dev swap
+    function setSwap(address _swap) external onlyOwner {
+        require(_swap != address(0), "E: error");
         swap = _swap;
     }
 
@@ -67,14 +82,8 @@ contract Factory {
     }
    
     /// @dev set fee to
-    function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
+    function setFeeTo(address _feeTo) external onlyOwner {
         feeTo = _feeTo;
     }
 
-    /// @dev set feeTo setter
-    function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
-        feeToSetter = _feeToSetter;
-    }
 }
