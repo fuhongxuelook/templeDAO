@@ -192,4 +192,33 @@ contract Vault is Ownable {
 
         return needToBeLiquidateTokenAmount;
     }
+
+
+    /// @dev add pool allowed token
+    function addPoolAllowedToken(address token, uint256 poolid) external onlyOwner {
+        // mapping(address => uint256) public tokenReserve;
+        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        if(address(pool) == address(0))  revert AddressCantBeZero();
+
+        pool.addAllowed(token);
+    }
+
+
+    /// @dev remove allowned token
+    function removePoolAllowedToken(address token, uint256 poolid) external onlyOwner {
+        // mapping(address => uint256) public tokenReserve;
+        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        if(address(pool) == address(0))  revert AddressCantBeZero();
+
+        pool.removeAllowed(token);
+    }
+
+    /// @dev set pool's price feed
+    function setPoolPriceFeed(address token, address priceFeed, uint256 poolid) external onlyOwner {
+        // mapping(address => uint256) public tokenReserve;
+        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        if(address(pool) == address(0))  revert AddressCantBeZero();
+
+        pool.setPriceFeed(token, priceFeed);
+    }
 }
