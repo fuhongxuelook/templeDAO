@@ -21,33 +21,12 @@ async function main() {
 
   console.log("my address ", my_address);
 
-  const Swap = await hre.ethers.getContractFactory("Swap");
-  const swap = await Swap.deploy()
+  const DEMO = await hre.ethers.getContractFactory("DEMO");
+  const demo = await DEMO.deploy()
 
-  await swap.deployed();
+  await demo.deployed();
 
-  console.log("swap address is:", swap.address)
-
-  let implement = swap.address;
-
-  const abi = [
-    "function initialize() external"
-  ];
-  const initialize = new ethers.Contract(implement, abi, signer);
-
-  let tx = await initialize.populateTransaction.initialize();
-  let data = tx.data
-
-  console.log("data is", tx.data);
-
-  const SaviProxy = await hre.ethers.getContractFactory("SaviProxy");
-  const proxy = await SaviProxy.deploy(implement, data)
-
-  await proxy.deployed();
-
-  console.log("proxy address is:", proxy.address)
-
-
+  console.log(demo.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

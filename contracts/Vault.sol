@@ -51,6 +51,7 @@ contract Vault is Ownable {
 
     constructor(address _factory) {
         factory = Factory(_factory);
+        feeTo = factory.feeTo();
     }
    
     receive() external payable {}
@@ -98,12 +99,14 @@ contract Vault is Ownable {
         require(poolTokenBalance >= amount, "E: amount not enough");
 
         uint256 poolTokenSupply = pool.totalSupply();
+        uint256 poolReserveVault = pool.getTokenReserveValue();
 
-        uint256 revenue = amount.mul(reserve0).div(poolTokenSupply);
+        uint256 revenue = amount.mul(poolReserveVault).div(poolTokenSupply);
 
+        /// principle
         uint256 _partPrinciple = amount.mul(principal[msg.sender]).div(poolTokenBalance);
 
-        uint256 tokenReserve = pool.tokenReserve(Constants.USDT);
+        uint256 tokenReserve = pool.tokenReserve(token);
 
         // require(tokenReserve >= revenue, "E: must liquidate");
         if(tokenReserve >= revenue) {
@@ -114,12 +117,12 @@ contract Vault is Ownable {
 
         uint256 profitFee;
         if(revenue > _partPrinciple) {
-            profitFee = profitFeeRate * (revenue - _partPrinciple) / FEE_DENOMIRATOR;
+            profitFee = revenue.sub(_partPrinciple).mul(profitFeeRate).div(FEE_DENOMIRATOR);
             //Constants.USDT.safeTransfer(feeTo, profitFee);
             pool.safeMint(feeTo, profitFee);
         }
 
-        Constants.USDT.safeTransfer(msg.sender, revenue - _partPrinciple);
+        token.safeTransfer(msg.sender, revenue.sub(profitFee));
 
         pool.safeBurn(msg.sender, amount);
     }

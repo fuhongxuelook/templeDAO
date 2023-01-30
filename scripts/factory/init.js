@@ -6,6 +6,15 @@
 const hre = require("hardhat");
 
 async function main() {
+
+  let provider = hre.ethers.provider;
+  let signer = provider.getSigner();
+
+  const myaddr = await signer.getAddress();
+
+  console.log(myaddr);
+  console.log(await signer.getBalance());
+
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
   //
@@ -14,40 +23,23 @@ async function main() {
 
   await hre.run('compile');
 
-  let provider = ethers.provider;
-  let signer = provider.getSigner();
 
-  let my_address = await signer.getAddress();
+  let factory_address = process.env.G_FACTORY;
+  let vault_address = process.env.G_VAULT;
+  let swap_address = process.env.G_SWAP;
 
-  console.log("my address ", my_address);
+  let factory = await hre.ethers.getContractAt("Factory", factory_address, signer);
 
-  const Swap = await hre.ethers.getContractFactory("Swap");
-  const swap = await Swap.deploy()
+  let setVault_tx = await factory.setVault(vault_address);
+  await setVault_tx.wait();
 
-  await swap.deployed();
+  let setSwap_tx = await factory.setSwap(swap_address);
+  await setSwap_tx.wait();
 
-  console.log("swap address is:", swap.address)
+  let setFeeto_tx = await factory.setFeeTo("0x3D2C9c796a1BFdBC803775CfffA1DeB3F78228Bb")
+  await setFeeto_tx.wait();
 
-  let implement = swap.address;
-
-  const abi = [
-    "function initialize() external"
-  ];
-  const initialize = new ethers.Contract(implement, abi, signer);
-
-  let tx = await initialize.populateTransaction.initialize();
-  let data = tx.data
-
-  console.log("data is", tx.data);
-
-  const SaviProxy = await hre.ethers.getContractFactory("SaviProxy");
-  const proxy = await SaviProxy.deploy(implement, data)
-
-  await proxy.deployed();
-
-  console.log("proxy address is:", proxy.address)
-
-
+  console.log("end");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

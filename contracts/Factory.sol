@@ -33,18 +33,6 @@ contract Factory {
         _; 
     }
 
-    /// @dev vault
-    function setVault(address _vault) external onlyOwner {
-        require(_vault != address(0), "E: error");
-        vault = _vault;
-    }
-
-    /// @dev swap
-    function setSwap(address _swap) external onlyOwner {
-        require(_swap != address(0), "E: error");
-        swap = _swap;
-    }
-
     /// @dev all pools length 
     function allPoolsLength() external view returns (uint) {
         return allPools.length;
@@ -84,6 +72,18 @@ contract Factory {
     /// @dev set fee to
     function setFeeTo(address _feeTo) external onlyOwner {
         feeTo = _feeTo;
+    }
+
+    /// @dev vault
+    function setVault(address _vault) external onlyOwner {
+        require(_vault != address(0), "E: error");
+        vault = _vault;
+    }
+
+    /// @dev swap
+    function setSwap(address _swap) external onlyOwner {
+        require(_swap != address(0), "E: error");
+        swap = _swap;
     }
 
 }
