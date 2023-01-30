@@ -38,6 +38,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     error TokenNotAllowed(address token);
     error AddressCantBeZero();
     error TokenReserveNotEnough(address);
+    error SwapError();
 
 
     constructor() {
@@ -121,6 +122,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 balanceAfter = currentBalance(toToken);
         uint256 realTradeAmount = balanceAfter - balanceBefore;
 
+        if(realTradeAmount == 0) revert SwapError();
 
         tokenReserve[fromToken] -= amount;
         tokenReserve[toToken] += realTradeAmount;
@@ -158,6 +160,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 balanceAfter = IERC20(Constants.USDT).balanceOf(address(this));
 
         uint256 realTradeAmount = balanceAfter - balanceBefore;
+
+         if(realTradeAmount == 0) revert SwapError();
+         
         tokenReserve[token] -= amount;
         tokenReserve[Constants.USDT] += realTradeAmount;
 
@@ -209,6 +214,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         }
     }
 
+
+    /// @dev set token to chainlink price feed
+    /// @dev to save gas, so set in every pool except external contract
     function setPriceFeed(address token, address feed) external override onlyVault {
         require(token == address(0) || feed == address(0), "E: error");
 
