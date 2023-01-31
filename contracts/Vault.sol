@@ -224,4 +224,12 @@ contract Vault is Ownable {
 
         pool.setPriceFeed(token, priceFeed);
     }
+
+    /// @dev keep enough allowance to vault
+    function approveToPool(uint256 poolid) external {
+        address pool = factory.getPoolById(poolid);
+        if(pool == address(0))  revert AddressCantBeZero();
+        Constants.USDT.safeApprove(pool, type(uint256).max);
+    }
+
 }

@@ -6,15 +6,6 @@
 const hre = require("hardhat");
 
 async function main() {
-
-  let provider = hre.ethers.provider;
-  let signer = provider.getSigner();
-
-  const myaddr = await signer.getAddress();
-
-  console.log(myaddr);
-  console.log(await signer.getBalance());
-
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
   //
@@ -23,25 +14,19 @@ async function main() {
 
   await hre.run('compile');
 
+  let provider = ethers.provider;
+  let signer = provider.getSigner();
 
-  let factory_address = process.env.G_FACTORY;
-  let vault_address = process.env.G_VAULT;
-  let swap_address = process.env.G_SWAP;
-  let pool_address = process.env.G_POOL;
+  let my_address = await signer.getAddress();
 
-  let pool = await hre.ethers.getContractAt("Pool", pool_address, signer);
+  console.log("my address ", my_address);
 
-  let vault = await pool.vault();
-  console.log(vault, vault_address);
+  const PriceFeed = await hre.ethers.getContractFactory("PriceFeed");
+  const pf = await PriceFeed.deploy()
 
+  await pf.deployed();
 
-  let approveVault_tx = await pool.approveToVault();
-  await approveVault_tx.wait();
-
-  console.log(approveVault_tx.hash);
-
-
-  console.log("end");
+  console.log(pf.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

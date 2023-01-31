@@ -28,10 +28,11 @@ async function main() {
   let vault_address = process.env.G_VAULT;
   let swap_address = process.env.G_SWAP;
   let token_address = process.env.G_TOKEN;
+  let pool_address = process.env.G_POOL;
 
   let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
 
-  // let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, 1);
+  // let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, 0);
   // await addPoolAllowedToken_tx.wait();
 
   // return;
@@ -45,11 +46,17 @@ async function main() {
 
   const erc20 = new ethers.Contract(token_address, abi, signer);
 
-  let amount = ethers.utils.parseEther("100");
+  let amount = ethers.utils.parseEther("1");
 
   // check allowance
   let allowance = await erc20.allowance(myaddr, vault_address);
   console.log("allowance is", allowance.toString());
+
+  let allowance_pool = await erc20.allowance(vault_address, pool_address);
+  console.log("allowance_pool is", allowance_pool.toString());
+
+  let balance = await erc20.balanceOf(myaddr);
+  console.log("balance is ", ethers.utils.formatEther(balance));
 
   if(allowance < amount) {
       let approve_tx = await erc20.approve(vault_address, ethers.constants.MaxUint256);
@@ -63,7 +70,7 @@ async function main() {
 
   // return;
 
-  let deposit_tx = await vault.deposit(token_address, amount, 1);
+  let deposit_tx = await vault.deposit(token_address, amount, 0);
   await deposit_tx.wait();
 
   console.log(deposit_tx.hash);
