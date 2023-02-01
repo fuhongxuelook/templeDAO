@@ -27,12 +27,19 @@ async function main() {
   let factory_address = process.env.G_FACTORY;
   let vault_address = process.env.G_VAULT;
   let swap_address = process.env.G_SWAP;
+  let token_address = process.env.G_TOKEN;
+  let price_feed = process.env.G_PRICEFEED;
 
-  let factory = await hre.ethers.getContractAt("Factory", factory_address, signer);
-  let createPool_tx = await factory.createPool("genesis");
-  await createPool_tx.wait();
+  console.log(token_address);
+  console.log(price_feed);
+  return;
 
-  console.log(createPool_tx.hash);
+  let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
+
+  let setPoolPriceFeed_tx = await vault.setPoolPriceFeed(token_address, price_feed, 1);
+  await setPoolPriceFeed_tx.wait();
+
+  console.log(setPoolPriceFeed_tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

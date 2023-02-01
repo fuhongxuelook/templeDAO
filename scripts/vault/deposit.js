@@ -32,9 +32,12 @@ async function main() {
 
   let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
 
-  // let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, 0);
+  // let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, 1);
   // await addPoolAllowedToken_tx.wait();
+  // return;
 
+  // let addTokenAllowed_tx = await vault.addTokenAllowed(token_address);
+  // await addTokenAllowed_tx.wait();
   // return;
   
   const abi = [
@@ -52,9 +55,6 @@ async function main() {
   let allowance = await erc20.allowance(myaddr, vault_address);
   console.log("allowance is", allowance.toString());
 
-  let allowance_pool = await erc20.allowance(vault_address, pool_address);
-  console.log("allowance_pool is", allowance_pool.toString());
-
   let balance = await erc20.balanceOf(myaddr);
   console.log("balance is ", ethers.utils.formatEther(balance));
 
@@ -65,12 +65,17 @@ async function main() {
       console.log("approve end");
   }
 
-  // let addTokenAllowed_tx = await vault.addTokenAllowed(token_address);
-  // await addTokenAllowed_tx.wait();
 
-  // return;
+  let allowance_pool = await erc20.allowance(vault_address, pool_address);
+  console.log("allowance_pool is", allowance_pool.toString());
+  if(allowance_pool < amount) {
+      let approvepool_tx = await vault.approveToPool(1);
+      await approvepool_tx.wait();
 
-  let deposit_tx = await vault.deposit(token_address, amount, 0);
+      console.log("approve end");
+  }
+
+  let deposit_tx = await vault.deposit(token_address, amount, 1);
   await deposit_tx.wait();
 
   console.log(deposit_tx.hash);

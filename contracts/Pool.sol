@@ -204,7 +204,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         for(uint256 i; i < allAllowedLength; ++i) {
             address t_token = allAllowed[i];
             uint256 t_tokenReserve = tokenReserve[t_token];
-            if(t_tokenReserve <= 1000) continue;
+            if(t_tokenReserve < 1000) continue;
             if(t_token == Constants.USDT) {
                 value  = value.add(t_tokenReserve);
                 continue;
@@ -218,7 +218,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     /// @dev set token to chainlink price feed
     /// @dev to save gas, so set in every pool except external contract
     function setPriceFeed(address token, address feed) external override onlyVault {
-        require(token == address(0) || feed == address(0), "E: error");
+        require(token != address(0) && feed != address(0), "E: error");
 
         priceFeeds[token] = feed;
     }
