@@ -168,6 +168,8 @@ contract Vault is Ownable {
         uint256 poolid,
         bytes calldata data
     ) external {
+        require(token != Constants.USDT, "E: liquidate token cant be usdt");
+
         // mapping(address => uint256) public tokenReserve;
         Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0))  revert AddressCantBeZero();
@@ -187,7 +189,6 @@ contract Vault is Ownable {
 
     /// @dev token amount need to be liquidate in account
     function tokenNeedLiquidate(address token, address account, Pool pool) public view returns (uint256) {
-
         uint256 tokenReserve = pool.tokenReserve(token);
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
 
@@ -200,12 +201,13 @@ contract Vault is Ownable {
         uint256 needToBeLiquidate = poolTokenBalance - usdtReserve;
 
         uint256 needToBeLiquidateTokenAmount = needToBeLiquidate.div(uint256(pool.getLatestPrice(token)));
+        uint256 needToBeLiquidateTokenAmountExpand = needToBeLiquidateTokenAmount + needToBeLiquidateTokenAmount.mul(5).div(100);
 
-        if(needToBeLiquidateTokenAmount >= tokenReserve) {
-            needToBeLiquidateTokenAmount = tokenReserve;
+        if(needToBeLiquidateTokenAmountExpand >= tokenReserve) {
+            needToBeLiquidateTokenAmountExpand = tokenReserve;
         } 
 
-        return needToBeLiquidateTokenAmount;
+        return needToBeLiquidateTokenAmountExpand;
     }
 
 
