@@ -49,7 +49,7 @@ async function main() {
 
   // const erc20 = new ethers.Contract(token_address, abi, signer);
 
-  let amount = ethers.utils.parseEther("1");
+  let amount = ethers.utils.parseEther("100");
   let pool_id = 0;
 
   // // check allowance

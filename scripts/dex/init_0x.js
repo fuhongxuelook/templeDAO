@@ -24,20 +24,27 @@ async function main() {
   await hre.run('compile');
 
 
-  let factory_address = process.env.G_FACTORY;
-  let vault_address = process.env.G_VAULT;
-  let swap_address = process.env.G_SWAP;
-  let token_address = process.env.G_TOKEN;
+  let swapContract = process.env.CELO_SWAP;
 
-  let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
+  let _proxy = "0xDef1C0ded9bec7F1a1670819833240f027b25EfF"
+  let _name = "0x";
 
+  let swap = await hre.ethers.getContractAt("Swap", swapContract, signer);
 
-  let amount = ethers.utils.parseEther("10");
+  let registerTx = await swap.registerAdapter(
+    _proxy,
+    hre.ethers.utils.formatBytes32String(_name)
+  );
 
-  let withdraw_tx = await vault.withdraw(token_address, amount, 0);
-  await withdraw_tx.wait();
+  await registerTx.wait();
+  console.log("0x router is registerred");
 
-  console.log(withdraw_tx.hash);
+  let index = await swap.getAdapterByIndex(0);
+  console.log(index);
+
+  console.log(hre.ethers.utils.parseBytes32String(index._name));
+
+  console.log("end");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -39,6 +39,11 @@ module.exports = {
       url: process.env.GOERLI || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+    celo_savi: {
+      url: process.env.CELO || "",
+      accounts:
+        process.env.PRIVATE_KEY_SAVI !== undefined ? [process.env.PRIVATE_KEY_SAVI] : [],
     }
   },
   etherscan: {

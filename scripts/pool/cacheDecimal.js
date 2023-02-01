@@ -27,17 +27,22 @@ async function main() {
   let factory_address = process.env.G_FACTORY;
   let vault_address = process.env.G_VAULT;
   let swap_address = process.env.G_SWAP;
+  let pool_address = process.env.G_POOL;
   let token_address = process.env.G_TOKEN;
 
-  let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
+  let pool = await hre.ethers.getContractAt("Pool", pool_address, signer);
 
+  
+  let decimals = await pool.cachedDecimals(token_address);
+  console.log(decimals);
 
-  let amount = ethers.utils.parseEther("10");
+  let cacheTokenDecimal_tx = await pool.cacheTokenDecimal(token_address);
+  await cacheTokenDecimal_tx.wait();
 
-  let withdraw_tx = await vault.withdraw(token_address, amount, 0);
-  await withdraw_tx.wait();
+  let decimalsAfter = await pool.cachedDecimals(token_address);
+  console.log(decimalsAfter);
 
-  console.log(withdraw_tx.hash);
+  console.log("end");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
