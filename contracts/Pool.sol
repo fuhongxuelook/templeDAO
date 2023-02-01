@@ -204,7 +204,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
 
     /// @dev get pool tokens value
-    function getTokenReserveValue() public returns (uint256 value) {
+    function getTokenReserveValue() public view returns (uint256 value) {
         uint256 allAllowedLength = allAllowed.length;
 
         if(allAllowedLength == 0) return 0;
@@ -225,15 +225,23 @@ contract Pool is IPool, Token, ChainlinkOracle {
             // }
             t_decimal = cachedDecimal[t_token];
             if(t_decimal == 0) {
-                (bool success, bytes memory res) = t_token.delegatecall(abi.encodeWithSignature("decimals()"));
-                require(success, "E: call error");
-                t_decimal = uint256(abi.decode(res, (uint8)));
-                cachedDecimal[t_token] = t_decimal;
+                t_decimal == 18;
+                // (bool success, bytes memory res) = t_token.delegatecall(abi.encodeWithSignature("decimals()"));
+                // require(success, "E: call error");
+                // t_decimal = uint256(abi.decode(res, (uint8)));
+                // cachedDecimal[t_token] = t_decimal;
             }
 
             t_tokenPrice = uint256(getLatestPrice(t_token));
             value = value.add(t_tokenReserve.mul(t_tokenPrice).div(1E8).div(10 ** t_decimal));
         }
+    }
+
+    function cacheTokenDecimal(address token) external {
+        (bool success, bytes memory res) = token.delegatecall(abi.encodeWithSignature("decimals()"));
+        require(success, "E: call error");
+        uint256 decimal = uint256(abi.decode(res, (uint8)));
+        cachedDecimal[token] = decimal;
     }
 
 

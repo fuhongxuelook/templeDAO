@@ -33,7 +33,6 @@ async function main() {
 
   let poolname = await pool.name();
   console.log(poolname);
-  return;
 
   let allAllowed0 = await pool.allAllowed(0);
   console.log(allAllowed0);

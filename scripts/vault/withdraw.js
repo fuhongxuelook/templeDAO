@@ -31,7 +31,10 @@ async function main() {
 
   let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
 
-  let withdraw_tx = await vault.withdraw(token_address, 10, 1);
+
+  let amount = ethers.utils.parseEther("0.001");
+
+  let withdraw_tx = await vault.withdraw(token_address, amount, 0);
   await withdraw_tx.wait();
 
   console.log(withdraw_tx.hash);
