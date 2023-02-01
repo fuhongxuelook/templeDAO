@@ -28,6 +28,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     mapping(address => bool) public allowed;
     address[] public allAllowed;                                // less change, can be complex
     mapping(address => uint256) public override tokenReserve;
+    mapping(address => uint256) public cachedDecimal; 
 
     event TradeTrace(
         address fromToken, 
@@ -55,6 +56,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _;
     }
 
+
+    /// @dev initialuze
     function initialize(string memory _poolname, address _vault, address _swap) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
@@ -201,21 +204,35 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
 
     /// @dev get pool tokens value
-    function getTokenReserveValue() public view returns (uint256 value) {
+    function getTokenReserveValue() public returns (uint256 value) {
         uint256 allAllowedLength = allAllowed.length;
 
         if(allAllowedLength == 0) return 0;
 
+        address t_token;
+        uint256 t_tokenReserve;
+        uint256 t_decimal;
+        uint256 t_tokenPrice;
         for(uint256 i; i < allAllowedLength; ++i) {
-            address t_token = allAllowed[i];
-            uint256 t_tokenReserve = tokenReserve[t_token];
+            // save gas
+            t_token = allAllowed[i];
+            // save gas
+            t_tokenReserve = tokenReserve[t_token];
             if(t_tokenReserve < 1000) continue;
             // if(t_token == Constants.USDT) {
             //     value  = value.add(t_tokenReserve);
             //     continue;
             // }
-            uint256 t_tokenPrice = uint256(getLatestPrice(t_token));
-            value = value.add(t_tokenReserve.mul(t_tokenPrice).div(1E8));
+            t_decimal = cachedDecimal[t_token];
+            if(t_decimal == 0) {
+                (bool success, bytes memory res) = t_token.delegatecall(abi.encodeWithSignature("decimals()"));
+                require(success, "E: call error");
+                t_decimal = uint256(abi.decode(res, (uint8)));
+                cachedDecimal[t_token] = t_decimal;
+            }
+
+            t_tokenPrice = uint256(getLatestPrice(t_token));
+            value = value.add(t_tokenReserve.mul(t_tokenPrice).div(1E8).div(10 ** t_decimal));
         }
     }
 

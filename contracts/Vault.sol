@@ -56,10 +56,16 @@ contract Vault is Ownable {
    
     receive() external payable {}
 
+
+    /// @dev get token reserve in vault
     function getReserve0() public view returns (uint256) {
         return reserve0;
     }
 
+    /// @dev deposit token to vault;
+    /// @param token:  deposited token address;
+    /// @param amount: deposit amount ;
+    /// @param poolid: invest pool ;
     function deposit(address token, uint256 amount, uint256 poolid) external {
         if(!allowed[token]) revert NotAllowedToken(token);
 
@@ -87,6 +93,10 @@ contract Vault is Ownable {
         emit Deposit(token, msg.sender, address(pool), amount, block.timestamp);
     }
 
+    /// @dev withdraw token from vault
+    /// @param token:  withdraw token address
+    /// @param amount: withdraws amount 
+    /// @param poolid: invest pool 
     function withdraw(address token, uint256 amount, uint256 poolid) external {
         if(!allowed[token]) revert NotAllowedToken(token);
         if(amount == 0) revert WithdrawAmountCantBeZero();
@@ -99,9 +109,9 @@ contract Vault is Ownable {
         require(poolTokenBalance >= amount, "E: amount not enough");
 
         uint256 poolTokenSupply = pool.totalSupply();
-        uint256 poolReserveVault = pool.getTokenReserveValue();
+        uint256 poolReserveValue = pool.getTokenReserveValue();
 
-        uint256 revenue = amount.mul(poolReserveVault).div(poolTokenSupply);
+        uint256 revenue = amount.mul(poolReserveValue).div(poolTokenSupply);
 
         /// principle
         uint256 partPrinciple = amount.mul(principal[msg.sender]).div(poolTokenBalance);
@@ -145,10 +155,12 @@ contract Vault is Ownable {
         allowed[token] = false;
     }
 
-    function getTokenPrice(address token) internal view returns(uint256 price) {
-        return price;
-    }
-
+    /// @dev liquidate token to usdt, and help investor to withdraw
+    /// @param aggregatorIndex: liquidate dex option
+    /// @param token: liquidate token in vault;
+    /// @param amount: liquidate amount of token
+    /// @param poolid: invest pool
+    /// @param data: swap data
     function liquidate(
         uint256 aggregatorIndex,
         address token,
