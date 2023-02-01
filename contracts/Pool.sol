@@ -28,7 +28,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     mapping(address => bool) public allowed;
     address[] public allAllowed;                                // less change, can be complex
     mapping(address => uint256) public override tokenReserve;
-    mapping(address => uint256) public cachedDecimal; 
+    mapping(address => uint256) public cachedDecimals; 
 
     event TradeTrace(
         address fromToken, 
@@ -223,7 +223,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
             //     value  = value.add(t_tokenReserve);
             //     continue;
             // }
-            t_decimal = cachedDecimal[t_token];
+            t_decimal = cachedDecimals[t_token];
             if(t_decimal == 0) {
                 t_decimal == 18;
                 // (bool success, bytes memory res) = t_token.delegatecall(abi.encodeWithSignature("decimals()"));
@@ -241,7 +241,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         (bool success, bytes memory res) = token.delegatecall(abi.encodeWithSignature("decimals()"));
         require(success, "E: call error");
         uint256 decimal = uint256(abi.decode(res, (uint8)));
-        cachedDecimal[token] = decimal;
+        cachedDecimals[token] = decimal;
     }
 
 
