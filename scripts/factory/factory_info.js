@@ -30,7 +30,7 @@ async function main() {
 
   let factory = await hre.ethers.getContractAt("Factory", factory_address, signer);
 
-  let pool_0 = await factory.getPoolById(0);
+  let pool_0 = await factory.getPoolById(1);
   console.log(pool_0);
 
 

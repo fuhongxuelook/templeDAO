@@ -65,7 +65,7 @@ contract Vault is Ownable {
 
         if(amount == 0) revert DepositAmountCantBeZero();
 
-        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0)) revert AddressCantBeZero();
 
         token.safeTransferFrom(msg.sender, address(this), amount);
@@ -91,7 +91,7 @@ contract Vault is Ownable {
         if(!allowed[token]) revert NotAllowedToken(token);
         if(amount == 0) revert WithdrawAmountCantBeZero();
 
-        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0)) revert AddressCantBeZero();
 
         uint256 poolTokenBalance = pool.balanceOf(msg.sender);
@@ -157,7 +157,7 @@ contract Vault is Ownable {
         bytes calldata data
     ) external {
         // mapping(address => uint256) public tokenReserve;
-        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0))  revert AddressCantBeZero();
 
         uint256 needToBeLiquidateTokenAmount = tokenNeedLiquidate(token, msg.sender, pool);
@@ -200,7 +200,7 @@ contract Vault is Ownable {
     /// @dev add pool allowed token
     function addPoolAllowedToken(address token, uint256 poolid) external onlyOwner {
         // mapping(address => uint256) public tokenReserve;
-        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0))  revert AddressCantBeZero();
 
         pool.addAllowed(token);
@@ -210,7 +210,7 @@ contract Vault is Ownable {
     /// @dev remove allowned token
     function removePoolAllowedToken(address token, uint256 poolid) external onlyOwner {
         // mapping(address => uint256) public tokenReserve;
-        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0))  revert AddressCantBeZero();
 
         pool.removeAllowed(token);
@@ -219,7 +219,7 @@ contract Vault is Ownable {
     /// @dev set pool's price feed
     function setPoolPriceFeed(address token, address priceFeed, uint256 poolid) external onlyOwner {
         // mapping(address => uint256) public tokenReserve;
-        Pool pool = Pool(payable(factory.getPoolById(poolid)));
+        Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0))  revert AddressCantBeZero();
 
         pool.setPriceFeed(token, priceFeed);
@@ -227,7 +227,7 @@ contract Vault is Ownable {
 
     /// @dev keep enough allowance to vault
     function approveToPool(uint256 poolid) external {
-        address pool = factory.getPoolById(poolid);
+        address pool = factory.getPool(poolid);
         if(pool == address(0))  revert AddressCantBeZero();
         Constants.USDT.safeApprove(pool, type(uint256).max);
     }

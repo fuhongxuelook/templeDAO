@@ -31,6 +31,10 @@ async function main() {
 
   let pool = await hre.ethers.getContractAt("Pool", pool_address, signer);
 
+  let poolname = await pool.name();
+  console.log(poolname);
+  return;
+
   let allAllowed0 = await pool.allAllowed(0);
   console.log(allAllowed0);
 

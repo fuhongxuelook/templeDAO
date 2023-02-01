@@ -18,8 +18,8 @@ contract Factory {
     /// inter swap address
     address public swap;
 
-    /// keccak256(poolname) => pool
-    mapping(bytes32 => address) poolMap;
+    // pools poolid => pool address
+    mapping(uint256 => address) pools;
     
     /// all pools
     address[] allPools;
@@ -41,32 +41,25 @@ contract Factory {
 
 
     /// @dev get pool address via id
-    function getPoolById(uint256 id) public view returns (address) {
-        if(id > allPools.length - 1) {
-            return address(0); 
-        }
-
-        return allPools[id];
-    }
-
-
-    /// @dev get pool address via poolname
-    function getPoolByName(string memory poolname) public view returns (address) {
-        bytes32 salt = keccak256(abi.encodePacked(poolname));
-
-        return poolMap[salt];
+    function getPool(uint256 id) public view returns (address pool) {
+        pool = pools[id];
+        require(pool != address(0), "E: pool is not existed");
     }
 
     /// @dev create new pool
     function createPool(string memory poolname) external returns (address pool) {
-        bytes memory bytecode = type(Pool).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(poolname));
+        
+        bytes memory bytecode = type(Pool).creationCode;
+        uint256 poolid = allPools.length;
+        bytecode = abi.encodePacked(bytecode, abi.encode(poolid));
+
         assembly {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         IPool(pool).initialize(poolname, vault, swap);
 
-        poolMap[salt] = pool;
+        pools[poolid] = pool;
         allPools.push(pool);
     }
    
