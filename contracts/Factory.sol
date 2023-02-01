@@ -41,15 +41,14 @@ contract Factory {
 
 
     /// @dev get pool address via id
-    function getPool(uint256 id) public view returns (address pool) {
-        pool = pools[id];
-        require(pool != address(0), "E: pool is not existed");
+    function getPool(uint256 id) public view returns (address) {
+        return pools[id];
     }
 
     /// @dev create new pool
     function createPool(string memory poolname) external returns (address pool) {
         bytes32 salt = keccak256(abi.encodePacked(poolname));
-        
+
         bytes memory bytecode = type(Pool).creationCode;
         uint256 poolid = allPools.length;
         bytecode = abi.encodePacked(bytecode, abi.encode(poolid));
