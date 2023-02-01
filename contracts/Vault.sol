@@ -104,7 +104,7 @@ contract Vault is Ownable {
         uint256 revenue = amount.mul(poolReserveVault).div(poolTokenSupply);
 
         /// principle
-        uint256 _partPrinciple = amount.mul(principal[msg.sender]).div(poolTokenBalance);
+        uint256 partPrinciple = amount.mul(principal[msg.sender]).div(poolTokenBalance);
 
         uint256 tokenReserve = pool.tokenReserve(token);
 
@@ -116,8 +116,8 @@ contract Vault is Ownable {
         }
 
         uint256 profitFee;
-        if(revenue > _partPrinciple) {
-            profitFee = revenue.sub(_partPrinciple).mul(profitFeeRate).div(FEE_DENOMIRATOR);
+        if(revenue > partPrinciple) {
+            profitFee = revenue.sub(partPrinciple).mul(profitFeeRate).div(FEE_DENOMIRATOR);
             //Constants.USDT.safeTransfer(feeTo, profitFee);
             pool.safeMint(feeTo, profitFee);
         }
