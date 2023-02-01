@@ -10,11 +10,13 @@ import {Constants} from "./Libraries/Constants.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ChainlinkOracle} from "./ChainlinkOracle.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract Pool is IPool, Token, ChainlinkOracle {
 
     using TransferHelper for address;
     using SafeMath for uint256;
+    using Strings for uint256;
 
     uint256 public usdtIN;
     uint256 public usdtOUT;
@@ -41,8 +43,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
     error SwapError();
 
 
-    constructor() {
+    constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
+
     }
 
     receive() external payable {}
@@ -175,6 +178,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         Constants.USDT.safeTransfer(msg.sender, amount);
 
         usdtOUT += amount;
+        tokenReserve[Constants.USDT] -= amount;
     }
 
     /// @dev vault send USDT to pool
@@ -182,6 +186,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         Constants.USDT.safeTransferFrom(msg.sender, address(this), amount);
 
         usdtIN += amount;
+        tokenReserve[Constants.USDT] += amount;
     }
 
     /// @dev mint token
@@ -205,10 +210,10 @@ contract Pool is IPool, Token, ChainlinkOracle {
             address t_token = allAllowed[i];
             uint256 t_tokenReserve = tokenReserve[t_token];
             if(t_tokenReserve < 1000) continue;
-            if(t_token == Constants.USDT) {
-                value  = value.add(t_tokenReserve);
-                continue;
-            }
+            // if(t_token == Constants.USDT) {
+            //     value  = value.add(t_tokenReserve);
+            //     continue;
+            // }
             uint256 t_tokenPrice = uint256(getLatestPrice(t_token));
             value = value.add(t_tokenReserve.mul(t_tokenPrice).div(1E8));
         }

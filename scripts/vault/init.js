@@ -32,13 +32,13 @@ async function main() {
 
   let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
 
-  // let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, 1);
-  // await addPoolAllowedToken_tx.wait();
-  // return;
+  let pool_id = 0;
 
-  // let addTokenAllowed_tx = await vault.addTokenAllowed(token_address);
-  // await addTokenAllowed_tx.wait();
-  // return;
+  let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, pool_id);
+  await addPoolAllowedToken_tx.wait();
+
+  let addTokenAllowed_tx = await vault.addTokenAllowed(token_address);
+  await addTokenAllowed_tx.wait();
   
   const abi = [
     "function approve(address spender, uint256 amount) public returns (bool)",
@@ -47,39 +47,38 @@ async function main() {
     "function symbol() public view returns (string memory)",
   ];
 
-  // const erc20 = new ethers.Contract(token_address, abi, signer);
+  const erc20 = new ethers.Contract(token_address, abi, signer);
 
   let amount = ethers.utils.parseEther("1");
-  let pool_id = 0;
 
-  // // check allowance
-  // let allowance = await erc20.allowance(myaddr, vault_address);
-  // console.log("allowance is", allowance.toString());
+  // check allowance
+  let allowance = await erc20.allowance(myaddr, vault_address);
+  console.log("allowance is", allowance.toString());
 
-  // let balance = await erc20.balanceOf(myaddr);
-  // console.log("balance is ", ethers.utils.formatEther(balance));
+  let balance = await erc20.balanceOf(myaddr);
+  console.log("balance is ", ethers.utils.formatEther(balance));
 
-  // if(allowance < amount) {
-  //     let approve_tx = await erc20.approve(vault_address, ethers.constants.MaxUint256);
-  //     await approve_tx.wait();
+  if(allowance < amount) {
+      let approve_tx = await erc20.approve(vault_address, ethers.constants.MaxUint256);
+      await approve_tx.wait();
 
-  //     console.log("approve end");
-  // }
+      console.log("approve end");
+  }
 
 
-  // let allowance_pool = await erc20.allowance(vault_address, pool_address);
-  // console.log("allowance_pool is", allowance_pool.toString());
-  // if(allowance_pool < amount) {
-  //     let approvepool_tx = await vault.approveToPool(1);
-  //     await approvepool_tx.wait();
+  let allowance_pool = await erc20.allowance(vault_address, pool_address);
+  console.log("allowance_pool is", allowance_pool.toString());
+  if(allowance_pool < amount) {
+      let approvepool_tx = await vault.approveToPool(pool_id);
+      await approvepool_tx.wait();
 
-  //     console.log("approve end");
-  // }
+      console.log("approve end");
+  }
 
-  let deposit_tx = await vault.deposit(token_address, amount, pool_id);
-  await deposit_tx.wait();
+  // let deposit_tx = await vault.deposit(token_address, amount, 1);
+  // await deposit_tx.wait();
 
-  console.log(deposit_tx.hash);
+  // console.log(deposit_tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

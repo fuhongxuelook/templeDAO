@@ -32,11 +32,12 @@ async function main() {
 
   console.log(token_address);
   console.log(price_feed);
-  return;
+
+  let pool_id = 0;
 
   let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
 
-  let setPoolPriceFeed_tx = await vault.setPoolPriceFeed(token_address, price_feed, 1);
+  let setPoolPriceFeed_tx = await vault.setPoolPriceFeed(token_address, price_feed, pool_id);
   await setPoolPriceFeed_tx.wait();
 
   console.log(setPoolPriceFeed_tx.hash);

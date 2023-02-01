@@ -6,5 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Token is ERC20 {
 
-    constructor() ERC20("POOL", "POOL") {}
+    constructor(string memory poolid) ERC20(
+        string.concat("pool_", poolid), 
+        string.concat("pool_", poolid)
+    ) {}
 }

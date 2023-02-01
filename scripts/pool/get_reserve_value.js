@@ -31,15 +31,11 @@ async function main() {
 
   let pool = await hre.ethers.getContractAt("Pool", pool_address, signer);
 
-  let vault = await pool.vault();
-  console.log(vault, vault_address);
+  let allAllowed0 = await pool.allAllowed(0);
+  console.log(allAllowed0);
 
-
-  let approveVault_tx = await pool.approveToVault();
-  await approveVault_tx.wait();
-
-  console.log(approveVault_tx.hash);
-
+  let reserve_value = await pool.getTokenReserveValue();
+  console.log("reserve value is ", reserve_value);
 
   console.log("end");
 }

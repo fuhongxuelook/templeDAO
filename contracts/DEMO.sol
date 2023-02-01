@@ -6,7 +6,7 @@ import "./Token.sol";
 
 contract DEMO is Token {
 
-    constructor() {
+    constructor() Token("Token") {
         _mint(msg.sender, 1000 * 1e18);
     }
 }
