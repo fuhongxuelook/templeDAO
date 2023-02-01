@@ -200,14 +200,14 @@ contract Vault is Ownable {
 
         uint256 needToBeLiquidate = poolTokenBalance - usdtReserve;
 
-        uint256 needToBeLiquidateTokenAmount = needToBeLiquidate.div(uint256(pool.getLatestPrice(token)));
-        uint256 needToBeLiquidateTokenAmountExpand = needToBeLiquidateTokenAmount + needToBeLiquidateTokenAmount.mul(5).div(100);
+        uint256 liquidateTokenAmount = needToBeLiquidate.div(uint256(pool.getLatestPrice(token)));
+        uint256 liquidateTokenAmountExpand = liquidateTokenAmount + liquidateTokenAmount.mul(5).div(100);
 
-        if(needToBeLiquidateTokenAmountExpand >= tokenReserve) {
-            needToBeLiquidateTokenAmountExpand = tokenReserve;
+        if(liquidateTokenAmountExpand >= tokenReserve) {
+            liquidateTokenAmountExpand = tokenReserve;
         } 
 
-        return needToBeLiquidateTokenAmountExpand;
+        return liquidateTokenAmountExpand;
     }
 
 
