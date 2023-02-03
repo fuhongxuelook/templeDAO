@@ -30,6 +30,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     mapping(address => uint256) public override tokenReserve;
     mapping(address => uint256) public cachedDecimals; 
 
+
     event TradeTrace(
         address fromToken, 
         address toToken, 
@@ -46,6 +47,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
+        cachedDecimals[Constants.USDT] = 18;
 
     }
 
@@ -202,6 +204,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _burn(account, amount);
     }
 
+    error DecimalIsZero(address token);
 
     /// @dev get pool tokens value
     function getTokenReserveValue() public view returns (uint256 value) {
@@ -213,6 +216,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 t_tokenReserve;
         uint256 t_decimal;
         uint256 t_tokenPrice;
+        uint256 t_decimalSpan;
+        bool t_lessZero;
+        uint256 t_value;
         for(uint256 i; i < allAllowedLength; ++i) {
             // save gas
             t_token = allAllowed[i];
@@ -225,15 +231,28 @@ contract Pool is IPool, Token, ChainlinkOracle {
             // }
             t_decimal = cachedDecimals[t_token];
             if(t_decimal == 0) {
-                t_decimal = 18;
+                revert DecimalIsZero(t_token);
                 // (bool success, bytes memory res) = t_token.delegatecall(abi.encodeWithSignature("decimals()"));
                 // require(success, "E: call error");
                 // t_decimal = uint256(abi.decode(res, (uint8)));
                 // cachedDecimal[t_token] = t_decimal;
             }
 
+            // 8 is price oracle decimal
+            if(t_decimal.add(8) >= Constants.USDTDecimal) {
+                t_decimalSpan = t_decimal.add(8).sub(Constants.USDTDecimal);
+                t_lessZero = true;
+            } else {
+                t_decimalSpan =  Constants.USDTDecimal.sub(t_decimal.add(8));
+            }
+
             t_tokenPrice = uint256(getLatestPrice(t_token));
-            value = value.add(t_tokenReserve.mul(t_tokenPrice).div(1E8));
+            if(t_lessZero) {
+                t_value = t_tokenReserve.mul(t_tokenPrice).mul(10 ** t_decimalSpan);
+            } else {
+                t_value = t_tokenReserve.mul(t_tokenPrice).div(10 ** t_decimalSpan);
+            }
+            value = value.add(t_value);
         }
     }
 
