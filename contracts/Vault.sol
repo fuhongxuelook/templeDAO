@@ -180,7 +180,7 @@ contract Vault is Ownable {
         pool.liquidate(aggregatorIndex, token, amount, data);
 
         uint256 usdtReserveNow = pool.tokenReserve(Constants.USDT);
-        require(poolTokenBalance <= usdtReserveNow.mul(105).div(100), "E: error");
+        require(poolTokenBalance.mul(105).div(100) >= usdtReserveNow, "E: error");
 
         return;
     }
@@ -194,8 +194,7 @@ contract Vault is Ownable {
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
         poolTokenBalance = pool.balanceOf(account);
 
-        uint256 needLiquidatedUsdt = poolTokenBalance - usdtReserve;
-        if(needLiquidatedUsdt == 0) revert DontNeedLiquidate();
+        if(poolTokenBalance <= usdtReserve) revert DontNeedLiquidate();
 
         // uint256 tokenPrice = uint256(pool.getLatestPrice(token));
 
