@@ -47,6 +47,7 @@ contract Vault is Ownable {
     error WithdrawAmountCantBeZero();
     error AddressCantBeZero();
     error TokenReserveNotEnough(address);
+    error DontNeedLiquidate();
 
 
     constructor(address _factory) {
@@ -172,42 +173,36 @@ contract Vault is Ownable {
 
         // mapping(address => uint256) public tokenReserve;
         Pool pool = Pool(payable(factory.getPool(poolid)));
-        if(address(pool) == address(0))  revert AddressCantBeZero();
+        if(address(pool) == address(0)) revert AddressCantBeZero();
 
-        uint256 needToBeLiquidateTokenAmount = tokenNeedLiquidate(token, msg.sender, pool);
+        uint256 poolTokenBalance = verifyLiquidateAmount(msg.sender, token, amount, pool);
 
-        require(needToBeLiquidateTokenAmount > 0 && amount > 0, "E: error");
+        pool.liquidate(aggregatorIndex, token, amount, data);
 
-        if(needToBeLiquidateTokenAmount > amount) {
-            needToBeLiquidateTokenAmount = amount;
-        }        
-
-        pool.liquidate(aggregatorIndex, token, needToBeLiquidateTokenAmount, data);
+        uint256 usdtReserveNow = pool.tokenReserve(Constants.USDT);
+        require(poolTokenBalance <= usdtReserveNow.mul(105).div(100), "E: error");
 
         return;
     }
 
     /// @dev token amount need to be liquidate in account
-    function tokenNeedLiquidate(address token, address account, Pool pool) public view returns (uint256) {
+    /// @dev cant liquidate over 1.05%
+    function verifyLiquidateAmount(address account, address token, uint256 amount, Pool pool) public view returns (uint256 poolTokenBalance) {
         uint256 tokenReserve = pool.tokenReserve(token);
+        if(tokenReserve < amount) revert TokenReserveNotEnough(token);
+
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
+        poolTokenBalance = pool.balanceOf(account);
 
-        if(tokenReserve == 0) revert TokenReserveNotEnough(token);
+        uint256 needLiquidatedUsdt = poolTokenBalance - usdtReserve;
+        if(needLiquidatedUsdt == 0) revert DontNeedLiquidate();
 
-        uint256 poolTokenBalance = pool.balanceOf(account);
+        // uint256 tokenPrice = uint256(pool.getLatestPrice(token));
 
-        if(poolTokenBalance <= usdtReserve) return 0;
+        // uint256 tokenAmount = tokenPrice.mul(amount);
 
-        uint256 needToBeLiquidate = poolTokenBalance - usdtReserve;
-
-        uint256 liquidateTokenAmount = needToBeLiquidate.div(uint256(pool.getLatestPrice(token)));
-        uint256 liquidateTokenAmountExpand = liquidateTokenAmount + liquidateTokenAmount.mul(5).div(100);
-
-        if(liquidateTokenAmountExpand >= tokenReserve) {
-            liquidateTokenAmountExpand = tokenReserve;
-        } 
-
-        return liquidateTokenAmountExpand;
+        // /// token amount less than usdt amount * 1.05
+        // require(tokenAmount <= needLiquidatedUsdt.mul(105).div(100), "amount not enough"); 
     }
 
 
