@@ -180,7 +180,9 @@ contract Vault is Ownable {
         pool.liquidate(aggregatorIndex, token, amount, data);
 
         uint256 usdtReserveNow = pool.tokenReserve(Constants.USDT);
-        require(poolTokenBalance.mul(105).div(100) >= usdtReserveNow, "E: error");
+
+        uint256 overTokenBalance = poolTokenBalance.mul(105).div(100);
+        require(overTokenBalance >= usdtReserveNow, "E: amount too much");
 
         return;
     }
