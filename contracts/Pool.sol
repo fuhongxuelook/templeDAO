@@ -48,7 +48,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
     constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
         cachedDecimals[Constants.USDT] = 18;
-
     }
 
     receive() external payable {}
@@ -151,7 +150,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     /// @dev liquidate token to USDT
     function liquidate(
-        uint aggregatorIndex,
+        uint256 aggregatorIndex,
         address token,
         uint256 amount,
         bytes calldata data

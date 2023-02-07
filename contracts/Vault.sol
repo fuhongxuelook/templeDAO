@@ -34,6 +34,7 @@ contract Vault is Ownable {
     // address token => bool status
     mapping(address => bool) public allowed;
 
+    // deposit event
     event Deposit(
         address token, 
         address account, 
@@ -115,8 +116,7 @@ contract Vault is Ownable {
         uint256 revenue = amount.mul(poolReserveValue).div(poolTokenSupply);
 
         /// principle
-        uint256 partPrinciple = amount.mul(principal[msg.sender]).div(poolTokenBalance);
-
+        uint256 partPrincipal = amount.mul(principal[msg.sender]).div(poolTokenBalance);
         uint256 tokenReserve = pool.tokenReserve(token);
 
         // require(tokenReserve >= revenue, "E: must liquidate");
@@ -127,8 +127,8 @@ contract Vault is Ownable {
         }
 
         uint256 profitFee;
-        if(revenue > partPrinciple) {
-            profitFee = revenue.sub(partPrinciple).mul(profitFeeRate).div(FEE_DENOMIRATOR);
+        if(revenue > partPrincipal) {
+            profitFee = revenue.sub(partPrincipal).mul(profitFeeRate).div(FEE_DENOMIRATOR);
             //Constants.USDT.safeTransfer(feeTo, profitFee);
             pool.safeMint(feeTo, profitFee);
         }
