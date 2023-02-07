@@ -119,13 +119,6 @@ contract Vault is Ownable {
         uint256 partPrincipal = amount.mul(principal[msg.sender]).div(poolTokenBalance);
         uint256 tokenReserve = pool.tokenReserve(token);
 
-        // require(tokenReserve >= revenue, "E: must liquidate");
-        if(tokenReserve >= revenue) {
-            pool.pool2Vault(revenue);
-        } else {
-            revert TokenReserveNotEnough(token);
-        }
-
         uint256 profitFee;
         if(revenue > partPrincipal) {
             profitFee = revenue.sub(partPrincipal).mul(profitFeeRate).div(FEE_DENOMIRATOR);
@@ -133,8 +126,12 @@ contract Vault is Ownable {
             pool.safeMint(feeTo, profitFee);
         }
 
-        token.safeTransfer(msg.sender, revenue.sub(profitFee));
+        // require(tokenReserve >= revenue, "E: must liquidate");
+        if(tokenReserve < revenue) revert TokenReserveNotEnough(token);
 
+        uint256 usdtAmount = revenue.sub(profitFee);
+        pool.pool2Vault(usdtAmount);
+        token.safeTransfer(msg.sender, usdtAmount);
         pool.safeBurn(msg.sender, amount);
     }
 
