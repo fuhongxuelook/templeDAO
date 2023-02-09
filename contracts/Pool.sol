@@ -123,19 +123,17 @@ contract Pool is IPool, Token, ChainlinkOracle {
         if(!allowed[toToken]) revert TokenNotAllowed(toToken);
         approveAllowance(swap, fromToken, amount);
 
-        uint256 balanceBefore = currentBalance(toToken);
-
+        uint256 swapBefore = currentBalance(toToken);
         ISwap(swap).swap(aggregatorIndex, fromToken, toToken, amount, data);
-
-        uint256 balanceAfter = currentBalance(toToken);
-        uint256 realTradeAmount = balanceAfter - balanceBefore;
-
-        if(realTradeAmount == 0) revert SwapError();
+        uint256 swapAfter = currentBalance(toToken);
+        
+        uint256 realAmountIn = swapAfter - swapBefore;
+        if(realAmountIn == 0) revert SwapError();
 
         tokenReserve[fromToken] -= amount;
-        tokenReserve[toToken] += realTradeAmount;
+        tokenReserve[toToken] += realAmountIn;
 
-        emit TradeTrace(fromToken, toToken, amount, realTradeAmount, block.timestamp);
+        emit TradeTrace(fromToken, toToken, amount, realAmountIn, block.timestamp);
     }  
 
     /// @dev get token balance 
