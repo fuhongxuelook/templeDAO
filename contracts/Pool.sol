@@ -33,7 +33,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     uint256 public maxAllowed = 10;
     mapping(address => bool) public allowed;
     EnumerableSet.AddressSet allAllowed;
-                              // less change, can be complex
+    // less change, can be complex
     mapping(address => uint256) public override tokenReserve;
     mapping(address => uint256) public cachedDecimals; 
 
@@ -55,7 +55,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
         cachedDecimals[Constants.USDT] = Constants.USDTDecimal;
-        addAllowed(Constants.USDT);
+        _addAllowed(Constants.USDT);
     }
 
     receive() external payable {}
@@ -101,9 +101,14 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     /// @dev add allowed token 
     function addAllowed(address token) public override onlyVault {
-        require(!allowed[token], "E: token has already been allowed");
 
         require(allAllowed.length() <= maxAllowed, "E: allowed number is max");
+
+        _addAllowed(token);
+    }
+
+    function _addAllowed(address token) private {
+        require(!allowed[token], "E: token has already been allowed");
 
         allowed[token] = true;
         allAllowed.add(token);
@@ -230,7 +235,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         bool t_more;
 
         /// @nitice allAllowed start from 1;
-        for(uint256 i = 1; i <= allAllowedLength; ++i) {
+        for(uint256 i = 0; i < allAllowedLength; ++i) {
             // save gas
             t_token = allAllowed.at(i);
             // save gas
@@ -281,4 +286,13 @@ contract Pool is IPool, Token, ChainlinkOracle {
         priceFeeds[token] = feed;
     }
 
+    function getAllowedTokenByIndex(uint256 index) public view returns(address token) {
+        require(index < allAllowed.length(), "E: exceed border");
+
+        token = allAllowed.at(index);
+    }
+
+    function allAllowedTokens() public view returns(address[] memory tokens) {
+        tokens = allAllowed.values();
+    }
 }
