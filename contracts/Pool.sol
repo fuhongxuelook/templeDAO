@@ -219,6 +219,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
         if(allAllowedLength == 0) return 0;
 
+        uint256 t_usdtDecimal = Constants.USDTDecimal;
         address t_token;
         uint256 t_tokenReserve;
         uint256 t_decimal;
@@ -242,12 +243,12 @@ contract Pool is IPool, Token, ChainlinkOracle {
             if(t_decimal == 0) revert DecimalIsZero(t_token);
 
             // 8 is price oracle decimal
-            if(t_decimal.add(PRICE_DECIMAL) >= Constants.USDTDecimal) {
+            if(t_decimal.add(PRICE_DECIMAL) >= t_usdtDecimal) {
                 t_more = false;
-                t_span = t_decimal.add(PRICE_DECIMAL).sub(Constants.USDTDecimal);
+                t_span = t_decimal.add(PRICE_DECIMAL).sub(t_usdtDecimal);
             } else {
                 t_more = true;
-                t_span =  Constants.USDTDecimal.sub(t_decimal.add(PRICE_DECIMAL));
+                t_span =  t_usdtDecimal.sub(t_decimal.add(PRICE_DECIMAL));
             }
 
             t_tokenPrice = uint256(getLatestPrice(t_token));
