@@ -219,6 +219,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
         if(allAllowedLength == 0) return 0;
 
+        // save gas
         uint256 t_usdtDecimal = Constants.USDTDecimal;
         address t_token;
         uint256 t_tokenReserve;
