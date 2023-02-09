@@ -34,8 +34,8 @@ async function main() {
 
   let pool_id = 0;
 
-  let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, pool_id);
-  await addPoolAllowedToken_tx.wait();
+  // let addPoolAllowedToken_tx = await vault.addPoolAllowedToken(token_address, pool_id);
+  // await addPoolAllowedToken_tx.wait();
 
   let addTokenAllowed_tx = await vault.addTokenAllowed(token_address);
   await addTokenAllowed_tx.wait();

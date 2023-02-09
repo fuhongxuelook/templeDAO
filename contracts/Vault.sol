@@ -58,6 +58,7 @@ contract Vault is Ownable {
     constructor(address _factory) {
         factory = Factory(_factory);
         feeTo = factory.feeTo();
+        allowed[Constants.USDT] = true;
     }
    
     receive() external payable {}
@@ -122,6 +123,9 @@ contract Vault is Ownable {
         uint256 partPrincipal = amount.mul(principal[msg.sender]).div(poolTokenBalance);
         uint256 tokenReserve = pool.tokenReserve(token);
 
+        // require(tokenReserve >= revenue, "E: must liquidate");
+        if(tokenReserve < revenue) revert TokenReserveNotEnough(token);
+
         uint256 profitFee;
         if(revenue > partPrincipal && !whitelist[msg.sender]) {
             profitFee = revenue.sub(partPrincipal).mul(profitFeeRate).div(FEE_DENOMIRATOR);
@@ -129,29 +133,22 @@ contract Vault is Ownable {
             pool.safeMint(feeTo, profitFee);
         }
 
-        // require(tokenReserve >= revenue, "E: must liquidate");
-        if(tokenReserve < revenue) revert TokenReserveNotEnough(token);
-
-        uint256 usdtAmount = revenue.sub(profitFee);
-        pool.pool2Vault(usdtAmount);
-        token.safeTransfer(msg.sender, usdtAmount);
+        uint256 withdrawAmount = revenue.sub(profitFee);
+        pool.pool2Vault(withdrawAmount);
+        token.safeTransfer(msg.sender, withdrawAmount);
         pool.safeBurn(msg.sender, amount);
     }
 
     /// @dev add allowed token
     function addTokenAllowed(address token) external onlyOwner {
-        if(token == address(0)) {
-            revert AddressCantBeZero();
-        }
+        if(token == address(0)) revert AddressCantBeZero();
 
         allowed[token] = true;
     }
 
     /// @dev remove allowed token
     function removeTokenAllowed(address token) external onlyOwner {
-        if(token == address(0)) {
-            revert AddressCantBeZero();
-        }
+        if(token == address(0)) revert AddressCantBeZero();
 
         allowed[token] = false;
     }
@@ -180,7 +177,8 @@ contract Vault is Ownable {
         pool.liquidate(aggregatorIndex, token, amount, data);
 
         uint256 usdtReserveNow = pool.tokenReserve(Constants.USDT);
-
+        
+        /// when liquidated, usdt amount must less than user balance's 105% amount
         uint256 overTokenBalance = poolTokenBalance.mul(105).div(100);
         require(overTokenBalance >= usdtReserveNow, "E: amount too much");
 
@@ -188,8 +186,18 @@ contract Vault is Ownable {
     }
 
     /// @dev token amount need to be liquidate in account
-    /// @dev cant liquidate over 1.05%
-    function verifyLiquidateAmount(address account, address token, uint256 amount, Pool pool) public view returns (uint256 poolTokenBalance) {
+    function verifyLiquidateAmount(
+        address account, 
+        address token, 
+        uint256 amount, 
+        Pool pool
+    ) 
+        public 
+        view 
+        returns (
+            uint256 poolTokenBalance
+        ) 
+    {
         uint256 tokenReserve = pool.tokenReserve(token);
         if(tokenReserve < amount) revert TokenReserveNotEnough(token);
 

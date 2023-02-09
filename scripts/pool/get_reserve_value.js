@@ -34,9 +34,6 @@ async function main() {
   let poolname = await pool.name();
   console.log(poolname);
 
-  let allAllowed0 = await pool.allAllowed(0);
-  console.log(allAllowed0);
-
   let reserve_value = await pool.getTokenReserveValue();
   console.log("reserve value is ", reserve_value);
 

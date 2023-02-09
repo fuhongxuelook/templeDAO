@@ -240,7 +240,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
             t_token = allAllowed.at(i);
             // save gas
             t_tokenReserve = tokenReserve[t_token];
-            if(t_tokenReserve < 1000) continue;
+            if(t_tokenReserve == 0) continue;
             // if(t_token == Constants.USDT) {
             //     value  = value.add(t_tokenReserve);
             //     continue;
@@ -262,6 +262,11 @@ contract Pool is IPool, Token, ChainlinkOracle {
                 t_value = t_tokenReserve.mul(t_tokenPrice).mul(10 ** t_span);
             } else {
                 t_value = t_tokenReserve.mul(t_tokenPrice).div(10 ** t_span);
+            }
+
+            // value less than 1 usdt, neglect ;
+            if(t_value < 1E18) {
+                continue;
             }
             value = value.add(t_value);
         }
