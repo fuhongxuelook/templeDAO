@@ -20,6 +20,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    uint256 public constant PRICE_DECIMAL = 8;
+
     uint256 public usdtIN;
     uint256 public usdtOUT;
     address public factory;
@@ -52,7 +54,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
-        cachedDecimals[Constants.USDT] = 18;
+        cachedDecimals[Constants.USDT] = Constants.USDTDecimal;
         addAllowed(Constants.USDT);
     }
 
@@ -240,12 +242,12 @@ contract Pool is IPool, Token, ChainlinkOracle {
             if(t_decimal == 0) revert DecimalIsZero(t_token);
 
             // 8 is price oracle decimal
-            if(t_decimal.add(8) >= Constants.USDTDecimal) {
-                t_span = t_decimal.add(8).sub(Constants.USDTDecimal);
+            if(t_decimal.add(PRICE_DECIMAL) >= Constants.USDTDecimal) {
                 t_more = false;
+                t_span = t_decimal.add(PRICE_DECIMAL).sub(Constants.USDTDecimal);
             } else {
-                t_span =  Constants.USDTDecimal.sub(t_decimal.add(8));
                 t_more = true;
+                t_span =  Constants.USDTDecimal.sub(t_decimal.add(PRICE_DECIMAL));
             }
 
             t_tokenPrice = uint256(getLatestPrice(t_token));
