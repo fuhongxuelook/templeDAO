@@ -48,13 +48,13 @@ contract Factory {
     /// @dev create new pool
     function createPool(string memory poolname) external returns (address pool) {
         bytes32 salt = keccak256(abi.encodePacked(poolname));
-
-        bytes memory bytecode = type(Pool).creationCode;
         uint256 poolid = allPools.length;
+        
+        bytes memory bytecode = type(Pool).creationCode;
         bytecode = abi.encodePacked(bytecode, abi.encode(poolid));
 
         assembly {
-            pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
+            pool := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
         }
         IPool(pool).initialize(poolname, vault, swap);
 
@@ -64,6 +64,7 @@ contract Factory {
    
     /// @dev set fee to
     function setFeeTo(address _feeTo) external onlyOwner {
+        require(_feeTo != address(0), "E: error");
         feeTo = _feeTo;
     }
 

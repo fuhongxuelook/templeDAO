@@ -33,6 +33,10 @@ contract Vault is Ownable {
     mapping(address => uint256) public principal;
     // address token => bool status
     mapping(address => bool) public allowed;
+    // white list
+    mapping(address => bool) public whitelist;
+    // black list
+    mapping(address => bool) public blacklist;
 
     // deposit event
     event Deposit(
@@ -57,7 +61,6 @@ contract Vault is Ownable {
     }
    
     receive() external payable {}
-
 
     /// @dev get token reserve in vault
     function getReserve0() public view returns (uint256) {
@@ -120,7 +123,7 @@ contract Vault is Ownable {
         uint256 tokenReserve = pool.tokenReserve(token);
 
         uint256 profitFee;
-        if(revenue > partPrincipal) {
+        if(revenue > partPrincipal && !whitelist[msg.sender]) {
             profitFee = revenue.sub(partPrincipal).mul(profitFeeRate).div(FEE_DENOMIRATOR);
             //Constants.USDT.safeTransfer(feeTo, profitFee);
             pool.safeMint(feeTo, profitFee);
