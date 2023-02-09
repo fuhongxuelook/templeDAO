@@ -242,6 +242,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
             // 8 is price oracle decimal
             if(t_decimal.add(8) >= Constants.USDTDecimal) {
                 t_span = t_decimal.add(8).sub(Constants.USDTDecimal);
+                t_more = false;
             } else {
                 t_span =  Constants.USDTDecimal.sub(t_decimal.add(8));
                 t_more = true;
