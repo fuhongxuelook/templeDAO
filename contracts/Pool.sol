@@ -159,18 +159,18 @@ contract Pool is IPool, Token, ChainlinkOracle {
         // mapping(address => uint256) public tokenReserve;
         if(amount > tokenReserve[token]) revert TokenReserveNotEnough(token);
 
-        uint256 balanceBefore = IERC20(Constants.USDT).balanceOf(address(this));
+        uint256 swapBefore = IERC20(Constants.USDT).balanceOf(address(this));
 
         ISwap(swap).swap(aggregatorIndex, token, Constants.USDT, amount, data);
 
-        uint256 balanceAfter = IERC20(Constants.USDT).balanceOf(address(this));
+        uint256 swapAfter = IERC20(Constants.USDT).balanceOf(address(this));
 
-        uint256 realTradeAmount = balanceAfter - balanceBefore;
+        uint256 realAmountIn = swapAfter - swapBefore;
 
-         if(realTradeAmount == 0) revert SwapError();
+         if(realAmountIn == 0) revert SwapError();
 
         tokenReserve[token] -= amount;
-        tokenReserve[Constants.USDT] += realTradeAmount;
+        tokenReserve[Constants.USDT] += realAmountIn;
 
         return;
     }
