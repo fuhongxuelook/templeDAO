@@ -11,12 +11,14 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ChainlinkOracle} from "./ChainlinkOracle.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract Pool is IPool, Token, ChainlinkOracle {
 
     using TransferHelper for address;
     using SafeMath for uint256;
     using Strings for uint256;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     uint256 public usdtIN;
     uint256 public usdtOUT;
@@ -26,8 +28,10 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     string poolname;
 
+    uint256 public maxAllowed = 10;
     mapping(address => bool) public allowed;
-    address[] public allAllowed;                                // less change, can be complex
+    EnumerableSet.AddressSet allAllowed;
+                              // less change, can be complex
     mapping(address => uint256) public override tokenReserve;
     mapping(address => uint256) public cachedDecimals; 
 
@@ -49,6 +53,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
         cachedDecimals[Constants.USDT] = 18;
+        addAllowed(Constants.USDT);
     }
 
     receive() external payable {}
@@ -93,11 +98,15 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     /// @dev add allowed token 
-    function addAllowed(address token) external override onlyVault {
+    function addAllowed(address token) public override onlyVault {
         require(!allowed[token], "E: token has already been allowed");
 
+        require(allAllowed.length() <= maxAllowed, "E: allowed number is max");
+
         allowed[token] = true;
-        allAllowed.push(token);
+        allAllowed.add(token);
+
+        cacheTokenDecimal(token);
     }
 
     /// @dev remove allowed token
@@ -105,6 +114,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         require(allowed[token], "E: token is not allowed");
 
         allowed[token] = false;
+        allAllowed.remove(token);
     }
 
     /// @dev get pool name
@@ -160,14 +170,11 @@ contract Pool is IPool, Token, ChainlinkOracle {
         if(amount > tokenReserve[token]) revert TokenReserveNotEnough(token);
 
         uint256 swapBefore = IERC20(Constants.USDT).balanceOf(address(this));
-
         ISwap(swap).swap(aggregatorIndex, token, Constants.USDT, amount, data);
-
         uint256 swapAfter = IERC20(Constants.USDT).balanceOf(address(this));
 
         uint256 realAmountIn = swapAfter - swapBefore;
-
-         if(realAmountIn == 0) revert SwapError();
+        if(realAmountIn == 0) revert SwapError();
 
         tokenReserve[token] -= amount;
         tokenReserve[Constants.USDT] += realAmountIn;
@@ -206,7 +213,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     /// @dev get pool tokens value
     function getTokenReserveValue() public view returns (uint256 value) {
-        uint256 allAllowedLength = allAllowed.length;
+        uint256 allAllowedLength = allAllowed.length();
 
         if(allAllowedLength == 0) return 0;
 
@@ -214,12 +221,14 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 t_tokenReserve;
         uint256 t_decimal;
         uint256 t_tokenPrice;
-        uint256 t_decimalSpan;
-        bool t_more;
+        uint256 t_span;
         uint256 t_value;
-        for(uint256 i; i < allAllowedLength; ++i) {
+        bool t_more;
+
+        /// @nitice allAllowed start from 1;
+        for(uint256 i = 1; i <= allAllowedLength; ++i) {
             // save gas
-            t_token = allAllowed[i];
+            t_token = allAllowed.at(i);
             // save gas
             t_tokenReserve = tokenReserve[t_token];
             if(t_tokenReserve < 1000) continue;
@@ -228,33 +237,30 @@ contract Pool is IPool, Token, ChainlinkOracle {
             //     continue;
             // }
             t_decimal = cachedDecimals[t_token];
-            if(t_decimal == 0) {
-                revert DecimalIsZero(t_token);
-                // (bool success, bytes memory res) = t_token.delegatecall(abi.encodeWithSignature("decimals()"));
-                // require(success, "E: call error");
-                // t_decimal = uint256(abi.decode(res, (uint8)));
-                // cachedDecimal[t_token] = t_decimal;
-            }
+            if(t_decimal == 0) revert DecimalIsZero(t_token);
 
             // 8 is price oracle decimal
             if(t_decimal.add(8) >= Constants.USDTDecimal) {
-                t_decimalSpan = t_decimal.add(8).sub(Constants.USDTDecimal);
+                t_span = t_decimal.add(8).sub(Constants.USDTDecimal);
             } else {
-                t_decimalSpan =  Constants.USDTDecimal.sub(t_decimal.add(8));
+                t_span =  Constants.USDTDecimal.sub(t_decimal.add(8));
                 t_more = true;
             }
 
             t_tokenPrice = uint256(getLatestPrice(t_token));
             if(t_more) {
-                t_value = t_tokenReserve.mul(t_tokenPrice).mul(10 ** t_decimalSpan);
+                t_value = t_tokenReserve.mul(t_tokenPrice).mul(10 ** t_span);
             } else {
-                t_value = t_tokenReserve.mul(t_tokenPrice).div(10 ** t_decimalSpan);
+                t_value = t_tokenReserve.mul(t_tokenPrice).div(10 ** t_span);
             }
             value = value.add(t_value);
         }
     }
 
-    function cacheTokenDecimal(address token) external {
+    function cacheTokenDecimal(address token) public {
+        if(cachedDecimals[token] > 0) {
+            return;
+        }
         (bool success, bytes memory res) = token.delegatecall(abi.encodeWithSignature("decimals()"));
         require(success, "E: call error");
         uint256 decimal = uint256(abi.decode(res, (uint8)));
