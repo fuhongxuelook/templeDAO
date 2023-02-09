@@ -6,7 +6,7 @@
 
 pragma solidity ^0.8.0;
 
-interface SwapInterface {
+interface ISwap{
 
     /**
      * @dev comfirmed swap info

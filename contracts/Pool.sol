@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import {Swap} from "./Dex/Swap.sol";
+import {ISwap} from "./Interface/ISwap.sol";
 import {Token} from "./Token.sol";
 import {IPool} from "./Interface/IPool.sol";
 import {TransferHelper} from "./Libraries/TransferHelper.sol";
@@ -22,8 +22,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
     uint256 public usdtOUT;
     address public factory;
     address public vault;
+    address public swap;
+
     string poolname;
-    Swap public swap;
 
     mapping(address => bool) public allowed;
     address[] public allAllowed;                                // less change, can be complex
@@ -63,7 +64,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         poolname = _poolname;
-        swap = Swap(payable(_swap));
+        swap = _swap;
 
         Constants.USDT.safeApprove(vault, type(uint256).max);
     }
@@ -120,11 +121,11 @@ contract Pool is IPool, Token, ChainlinkOracle {
         bytes calldata data
     ) external override {
         if(!allowed[toToken]) revert TokenNotAllowed(toToken);
-        approveAllowance(address(swap), fromToken, amount);
+        approveAllowance(swap, fromToken, amount);
 
         uint256 balanceBefore = currentBalance(toToken);
 
-        swap.swap(aggregatorIndex, fromToken, toToken, amount, data);
+        ISwap(swap).swap(aggregatorIndex, fromToken, toToken, amount, data);
 
         uint256 balanceAfter = currentBalance(toToken);
         uint256 realTradeAmount = balanceAfter - balanceBefore;
@@ -162,7 +163,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
         uint256 balanceBefore = IERC20(Constants.USDT).balanceOf(address(this));
 
-        swap.swap(aggregatorIndex, token, Constants.USDT, amount, data);
+        ISwap(swap).swap(aggregatorIndex, token, Constants.USDT, amount, data);
 
         uint256 balanceAfter = IERC20(Constants.USDT).balanceOf(address(this));
 

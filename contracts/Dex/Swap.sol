@@ -10,7 +10,7 @@ import {AdapterManage} from "./AdapterManage.sol";
 import {TransferHelper} from "../Libraries/TransferHelper.sol";
 import {Constants} from "../Libraries/Constants.sol";
 import {AdapterSet} from "../Libraries/AdapterSet.sol";
-import {SwapInterface} from "../Interface/SwapInterface.sol";
+import {ISwap} from "../Interface/ISwap.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -18,7 +18,7 @@ import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Addr
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 contract Swap is 
-    SwapInterface, 
+    ISwap, 
     AdapterManage, 
     PausableUpgradeable, 
     ReentrancyGuardUpgradeable, 
@@ -41,7 +41,7 @@ contract Swap is
     error AddressCantBeZero();
 
     /**
-     * @dev See SwapInterface - swap
+     * @dev See ISwap - swap
      * 
      * collect from token (or ether) from msg.sender
      * send token(ether) to performer address
