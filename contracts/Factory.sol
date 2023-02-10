@@ -4,19 +4,20 @@ pragma solidity ^0.8.0;
 
 import {Pool} from "./Pool.sol";
 import {IPool} from "./Interface/IPool.sol";
+import {IFactory} from "./Interface/IFactory.sol";
 
-contract Factory { 
+contract Factory is IFactory { 
     /// fee recipient address
-    address public feeTo;
+    address public override feeTo;
 
     /// fee recipient address setter
-    address public owner;
+    address public override owner;
 
     /// vault address
-    address public vault;
+    address public override vault;
 
     /// inter swap address
-    address public swap;
+    address public override swap;
 
     // pools poolid => pool address
     mapping(uint256 => address) pools;
@@ -35,18 +36,18 @@ contract Factory {
     }
 
     /// @dev all pools length 
-    function allPoolsLength() external view returns (uint) {
+    function allPoolsLength() external view override returns (uint) {
         return allPools.length;
     }
 
 
     /// @dev get pool address via id
-    function getPool(uint256 id) public view returns (address) {
+    function getPool(uint256 id) public view override returns (address) {
         return pools[id];
     }
 
     /// @dev create new pool
-    function createPool(string memory poolname) external returns (address pool) {
+    function createPool(string memory poolname) external override returns (address pool) {
         bytes32 salt = keccak256(abi.encodePacked(poolname));
         uint256 poolid = allPools.length;
         
@@ -63,19 +64,19 @@ contract Factory {
     }
    
     /// @dev set fee to
-    function setFeeTo(address _feeTo) external onlyOwner {
+    function setFeeTo(address _feeTo) external override onlyOwner {
         require(_feeTo != address(0), "E: error");
         feeTo = _feeTo;
     }
 
     /// @dev vault
-    function setVault(address _vault) external onlyOwner {
+    function setVault(address _vault) external override onlyOwner {
         require(_vault != address(0), "E: error");
         vault = _vault;
     }
 
     /// @dev swap
-    function setSwap(address _swap) external onlyOwner {
+    function setSwap(address _swap) external override onlyOwner {
         require(_swap != address(0), "E: error");
         swap = _swap;
     }

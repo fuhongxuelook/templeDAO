@@ -42,7 +42,7 @@ interface IPool {
     function vault2Pool(uint256 amount) external;
 
     /// @dev mint token
-    function safeMint(address account, uint256 amount) external;
+    function safeMint(address to) external returns (uint liquidity);
     /// @dev burn token
     function safeBurn(address account, uint256 amount) external;
 }

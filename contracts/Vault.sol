@@ -90,11 +90,10 @@ contract Vault is Ownable {
 
         uint256 tokenDeposited = amount.sub(manageFeeAmount);
 
-        gross = gross.add(amount);
         principal[msg.sender] = principal[msg.sender].add(tokenDeposited);
 
-        pool.safeMint(msg.sender, tokenDeposited);
-        pool.safeMint(feeTo, manageFeeAmount);
+        pool.safeMint(msg.sender);
+        pool.safeMint(feeTo);
 
         emit Deposit(token, msg.sender, address(pool), amount, block.timestamp);
     }
@@ -130,7 +129,7 @@ contract Vault is Ownable {
         if(revenue > partPrincipal && !whitelist[msg.sender]) {
             profitFee = revenue.sub(partPrincipal).mul(profitFeeRate).div(FEE_DENOMIRATOR);
             //Constants.USDT.safeTransfer(feeTo, profitFee);
-            pool.safeMint(feeTo, profitFee);
+            pool.safeMint(feeTo);
         }
 
         uint256 withdrawAmount = revenue.sub(profitFee);
@@ -184,6 +183,7 @@ contract Vault is Ownable {
 
         return;
     }
+
 
     /// @dev token amount need to be liquidate in account
     function verifyLiquidateAmount(

@@ -8,10 +8,12 @@ import {IPool} from "./Interface/IPool.sol";
 import {TransferHelper} from "./Libraries/TransferHelper.sol";
 import {Constants} from "./Libraries/Constants.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ChainlinkOracle} from "./ChainlinkOracle.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IFactory} from "./Interface/IFactory.sol";
 
 contract Pool is IPool, Token, ChainlinkOracle {
 
@@ -19,14 +21,19 @@ contract Pool is IPool, Token, ChainlinkOracle {
     using SafeMath for uint256;
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using Math for uint256;
 
     uint256 public constant PRICE_DECIMAL = 8;
+    uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     uint256 public usdtIN;
     uint256 public usdtOUT;
+    uint256 public reserve0;
     address public factory;
     address public vault;
     address public swap;
+
+    uint256 kLast;
 
     string poolname;
 
@@ -206,10 +213,56 @@ contract Pool is IPool, Token, ChainlinkOracle {
         tokenReserve[Constants.USDT] += amount;
     }
 
+
     /// @dev mint token
-    function safeMint(address account, uint256 amount) external override onlyVault {
-        _mint(account, amount);
+    function safeMint(address to) external override returns (uint liquidity) {
+        uint256 _reserve0 = getTokenReserveValue();
+        /// only support usdt token
+        uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
+        uint amount0 = balance0.sub(tokenReserve[Constants.USDT]);
+
+        bool feeOn = _mintFee(_reserve0);
+        uint _totalSupply = totalSupply(); // gas savings, must be defined here since totalSupply can update in _mintFee
+        if (_totalSupply == 0) {
+            liquidity = amount0.sqrt().sub(MINIMUM_LIQUIDITY);
+            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+        } else {
+            liquidity = amount0.mul(_totalSupply) / _reserve0;
+        }
+        require(liquidity > 0, 'E: INSUFFICIENT_LIQUIDITY_MINTED');
+        
+        _mint(to, liquidity);
+        if (feeOn) kLast = _reserve0; // reserve0 is up-to-date
+        
+        _update(balance0);
     }
+
+    // update reserves and, on the first call per block, price accumulators
+    function _update(uint _balance0) private {
+        tokenReserve[Constants.USDT] = _balance0;
+    }
+
+    // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+    function _mintFee(uint _reserve0) private returns (bool feeOn) {
+        address feeTo = IFactory(factory).feeTo();
+        feeOn = feeTo != address(0);
+        uint _kLast = kLast; // gas savings
+        if (feeOn) {
+            if (_kLast != 0) {
+                uint rootK = _reserve0.sqrt();
+                uint rootKLast = _kLast.sqrt();
+                if (rootK > rootKLast) {
+                    uint numerator = totalSupply().mul(rootK.sub(rootKLast));
+                    uint denominator = rootK.mul(9).add(rootKLast);
+                    uint liquidity = numerator / denominator;
+                    if (liquidity > 0) _mint(feeTo, liquidity);
+                }
+            }
+        } else if (_kLast != 0) {
+            kLast = 0;
+        }
+    }
+
 
     /// @dev burn token
     function safeBurn(address account, uint256 amount) external override onlyVault {
