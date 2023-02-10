@@ -45,4 +45,5 @@ interface IPool {
     function safeMint(address to) external returns (uint liquidity);
     /// @dev burn token
     function safeBurn(address to) external returns (uint amount0);
+
 }
