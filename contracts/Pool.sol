@@ -21,13 +21,13 @@ contract Pool is IPool, Token, ChainlinkOracle {
     using SafeMath for uint256;
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
-    using Math for uint256;
 
     uint256 public constant PRICE_DECIMAL = 8;
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     uint256 public constant FEE_DENOMIRATOR = 10_000;
+    uint256 public constant ONE_ETHER = 1 ether;
 
     uint256 public profitFeeRate = 1_000;
     // only take once
@@ -113,7 +113,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     /// @dev add allowed token 
     function addAllowed(address token, address feed) public override onlyVault {
-
         require(allAllowed.length() <= maxAllowed, "E: allowed number is max");
 
         _addAllowed(token);
@@ -173,7 +172,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
         if(token == Constants.ETH) {
             return address(this).balance;
         }
-
         return IERC20(token).balanceOf(address(this));
     }
 
@@ -229,7 +227,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         (bool feeOn, address feeTo) = _mintFee(_reserve0);
         uint _totalSupply = totalSupply; // gas savings,
         if (_totalSupply == 0) {
-            liquidity = amount0.sqrt().sub(MINIMUM_LIQUIDITY);
+            liquidity = Math.sqrt(amount0.mul(ONE_ETHER)).sub(MINIMUM_LIQUIDITY);
             _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
         } else {
             liquidity = amount0.mul(_totalSupply) / _reserve0;
@@ -240,7 +238,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _mint(feeTo, manageFee);
         _mint(to, liquidity.sub(manageFee));
 
-        if (feeOn) kLast = _reserve0; // reserve0 is up-to-date
+        if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 is up-to-date
         
         _update(balance0);
     }
@@ -257,8 +255,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint _kLast = kLast; // gas savings
         if (feeOn) {
             if (_kLast != 0) {
-                uint rootK = _reserve0.sqrt();
-                uint rootKLast = _kLast.sqrt();
+                uint rootK = Math.sqrt(_reserve0.mul(ONE_ETHER));
+                uint rootKLast = Math.sqrt(_kLast);
                 if (rootK > rootKLast) {
                     uint numerator = totalSupply.mul(rootK.sub(rootKLast));
                     uint denominator = rootK.mul(9).add(rootKLast);
@@ -287,8 +285,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         
         uint256 balance0 = balanceOf[address(this)];
 
+        if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 and reserve1 are up-to-date
+
         _update(balance0);
-        if (feeOn) kLast = _reserve0; // reserve0 and reserve1 are up-to-date
     }
 
     error DecimalIsZero(address token);
