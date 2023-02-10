@@ -127,7 +127,7 @@ contract Vault is Ownable {
         uint256 withdrawAmount = revenue.sub(profitFee);
         pool.pool2Vault(withdrawAmount);
         token.safeTransfer(msg.sender, withdrawAmount);
-        pool.safeBurn(msg.sender, amount);
+        pool.safeBurn(msg.sender);
     }
 
     /// @dev add allowed token

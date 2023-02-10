@@ -24,6 +24,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     using Math for uint256;
 
     uint256 public constant PRICE_DECIMAL = 8;
+
     uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     uint256 public constant FEE_DENOMIRATOR = 10_000;
@@ -271,10 +272,25 @@ contract Pool is IPool, Token, ChainlinkOracle {
         }
     }
 
-
     /// @dev burn token
-    function safeBurn(address account, uint256 amount) external override onlyVault {
-        _burn(account, amount);
+    function safeBurn(address to) external override returns (uint amount0) {
+        uint256 _reserve0 = getTokenReserveValue();  
+        address _token0 = Constants.USDT;
+
+        uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
+        uint liquidity = balanceOf(address(this));
+
+        (bool feeOn, ) = _mintFee(_reserve0);
+        uint _totalSupply = totalSupply(); // gas savings, must be defined here since totalSupply can update in _mintFee
+        amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
+        require(amount0 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');
+        _burn(address(this), liquidity);
+        _token0.safeTransfer(to, amount0);
+        
+        balance0 = IERC20(_token0).balanceOf(address(this));
+
+        _update(balance0);
+        if (feeOn) kLast = _reserve0; // reserve0 and reserve1 are up-to-date
     }
 
     error DecimalIsZero(address token);
