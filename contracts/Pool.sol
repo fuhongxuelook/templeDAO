@@ -26,6 +26,12 @@ contract Pool is IPool, Token, ChainlinkOracle {
     uint256 public constant PRICE_DECIMAL = 8;
     uint public constant MINIMUM_LIQUIDITY = 10**3;
 
+    uint256 public constant FEE_DENOMIRATOR = 10_000;
+
+    uint256 public profitFeeRate = 1_000;
+    // only take once
+    uint256 public manageFeeRate = 100;
+
     uint256 public usdtIN;
     uint256 public usdtOUT;
     uint256 public reserve0;
@@ -221,7 +227,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
         uint amount0 = balance0.sub(tokenReserve[Constants.USDT]);
 
-        bool feeOn = _mintFee(_reserve0);
+        (bool feeOn, address feeTo) = _mintFee(_reserve0);
         uint _totalSupply = totalSupply(); // gas savings, must be defined here since totalSupply can update in _mintFee
         if (_totalSupply == 0) {
             liquidity = amount0.sqrt().sub(MINIMUM_LIQUIDITY);
@@ -231,7 +237,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         }
         require(liquidity > 0, 'E: INSUFFICIENT_LIQUIDITY_MINTED');
         
+        uint256 manageFee = liquidity.mul(manageFeeRate).div(FEE_DENOMIRATOR);
         _mint(to, liquidity);
+        _mint(feeTo, liquidity.sub(manageFee));
         if (feeOn) kLast = _reserve0; // reserve0 is up-to-date
         
         _update(balance0);
@@ -243,8 +251,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
-    function _mintFee(uint _reserve0) private returns (bool feeOn) {
-        address feeTo = IFactory(factory).feeTo();
+    function _mintFee(uint _reserve0) private returns (bool feeOn, address feeTo) {
+        feeTo = IFactory(factory).feeTo();
         feeOn = feeTo != address(0);
         uint _kLast = kLast; // gas savings
         if (feeOn) {
