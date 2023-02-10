@@ -114,11 +114,12 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     /// @dev add allowed token 
-    function addAllowed(address token) public override onlyVault {
+    function addAllowed(address token, address feed) public override onlyVault {
 
         require(allAllowed.length() <= maxAllowed, "E: allowed number is max");
 
         _addAllowed(token);
+        _setPriceFeed(token, feed);
     }
 
     function _addAllowed(address token) private {
@@ -363,6 +364,10 @@ contract Pool is IPool, Token, ChainlinkOracle {
     /// @dev set token to chainlink price feed
     /// @dev to save gas, so set in every pool except external contract
     function setPriceFeed(address token, address feed) external override onlyVault {
+       _setPriceFeed(token, feed);
+    }
+
+    function _setPriceFeed(address token, address feed) private {
         require(token != address(0) && feed != address(0), "E: error");
 
         priceFeeds[token] = feed;

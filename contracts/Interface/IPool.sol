@@ -10,7 +10,7 @@ interface IPool {
     function initialize(string memory _poolname, address _vault, address _swap) external;
 
     /// @dev add allowed token 
-    function addAllowed(address token) external;
+    function addAllowed(address token, address feed) external;
 
     /// @dev remove allowed token
     function removeAllowed(address token) external;

@@ -217,12 +217,12 @@ contract Vault is Ownable {
 
 
     /// @dev add pool allowed token
-    function addPoolAllowedToken(address token, uint256 poolid) external onlyOwner {
+    function addPoolAllowedToken(uint256 poolid, address token, address feed) external onlyOwner {
         // mapping(address => uint256) public tokenReserve;
         Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0))  revert AddressCantBeZero();
 
-        pool.addAllowed(token);
+        pool.addAllowed(token, feed);
     }
 
 
