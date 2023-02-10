@@ -91,7 +91,6 @@ contract Vault is Ownable {
     }
 
     /// @dev withdraw token from vault
-    /// @param token:  withdraw token address
     /// @param amount: withdraws amount 
     /// @param poolid: invest pool 
     // function withdraw(address token, uint256 amount, uint256 poolid) external {
@@ -130,14 +129,13 @@ contract Vault is Ownable {
     //     pool.safeBurn(msg.sender);
     // }
 
-    function withdraw(address token, uint256 amount, uint256 poolid) external {
-        if(!allowed[token]) revert NotAllowedToken(token);
+    function withdraw(uint256 poolid, uint256 amount) external {
         if(amount == 0) revert WithdrawAmountCantBeZero();
 
         address pool = factory.getPool(poolid);
         if(pool == address(0)) revert AddressCantBeZero();
 
-        pool.safeTransfer(msg.sender, amount);
+        pool.safeTransferFrom(msg.sender, pool, amount);
         IPool(pool).safeBurn(msg.sender);
     }
 
