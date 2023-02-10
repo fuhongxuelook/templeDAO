@@ -28,13 +28,34 @@ async function main() {
   let vault_address = process.env.G_VAULT;
   let swap_address = process.env.G_SWAP;
   let token_address = process.env.G_TOKEN;
+  let pool_address = process.env.G_POOL;
 
   let vault = await hre.ethers.getContractAt("Vault", vault_address, signer);
 
+  const abi = [
+    "function approve(address spender, uint256 amount) public returns (bool)",
+    "function allowance(address owner, address spender) public view returns (uint256)",
+    "function balanceOf(address owner) public view returns (uint256)",
+    "function symbol() public view returns (string memory)",
+  ];
 
-  let amount = ethers.utils.parseEther("89");
+  let amount = ethers.utils.parseEther("1");
 
-  let withdraw_tx = await vault.withdraw(token_address, amount, 0);
+  const erc20 = new ethers.Contract(pool_address, abi, signer);
+  let allowance = await erc20.allowance(myaddr, vault_address);
+  console.log("allowance is", allowance.toString());
+  console.log("balance is", await erc20.balanceOf(pool_address));
+
+  if(allowance < amount) {
+      let approve_tx = await erc20.approve(vault_address, ethers.constants.MaxUint256);
+      await approve_tx.wait();
+
+      console.log("approve end");
+  }
+
+
+
+  let withdraw_tx = await vault.withdraw(0, amount);
   await withdraw_tx.wait();
 
   console.log(withdraw_tx.hash);

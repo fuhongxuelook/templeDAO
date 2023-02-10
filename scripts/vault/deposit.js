@@ -23,7 +23,6 @@ async function main() {
 
   await hre.run('compile');
 
-
   let factory_address = process.env.G_FACTORY;
   let vault_address = process.env.G_VAULT;
   let swap_address = process.env.G_SWAP;

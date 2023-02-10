@@ -28,11 +28,16 @@ async function main() {
   let vault_address = process.env.G_VAULT;
   let swap_address = process.env.G_SWAP;
   let pool_address = process.env.G_POOL;
+  let token_address = process.env.G_TOKEN;
 
   let pool = await hre.ethers.getContractAt("Pool", pool_address, signer);
 
   let poolname = await pool.name();
   console.log(poolname);
+
+  let usdt_reserve = await pool.tokenReserve(token_address);
+  console.log(usdt_reserve);
+  return;
 
   let reserve_value = await pool.getTokenReserveValue();
   console.log("reserve value is ", reserve_value);

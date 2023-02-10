@@ -49,6 +49,11 @@ async function main() {
 
   const erc20 = new ethers.Contract(token_address, abi, signer);
 
+  let pool_balance = await erc20.balanceOf(pool_address);
+  console.log("pool balance is ", ethers.utils.formatEther(pool_balance));
+  return;
+
+
   let amount = ethers.utils.parseEther("1");
 
   // check allowance

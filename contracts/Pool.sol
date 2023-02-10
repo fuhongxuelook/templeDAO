@@ -24,9 +24,10 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     uint256 public constant PRICE_DECIMAL = 8;
 
-    uint public constant MINIMUM_LIQUIDITY = 10**3;
+    uint256 public constant MINIMUM_LIQUIDITY = 10**3;
 
     uint256 public constant FEE_DENOMIRATOR = 10_000;
+
     uint256 public constant ONE_ETHER = 1 ether;
 
     uint256 public profitFeeRate = 1_000;
@@ -38,7 +39,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     address public vault;
     address public swap;
 
-    uint256 kLast;
+    uint256 public kLast;
 
     string poolname;
 
@@ -283,7 +284,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _burn(address(this), liquidity);
         _token0.safeTransfer(to, amount0);
         
-        uint256 balance0 = balanceOf[address(this)];
+        uint256 balance0 = IERC20(_token0).balanceOf(address(this));
 
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 and reserve1 are up-to-date
 
@@ -339,7 +340,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
             }
 
             // value less than 1 usdt, neglect ;
-            if(t_value < 1E18) {
+            if(t_value < 1E16) {
                 continue;
             }
             value = value.add(t_value);
