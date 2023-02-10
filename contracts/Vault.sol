@@ -137,10 +137,6 @@ contract Vault is Ownable {
         address pool = factory.getPool(poolid);
         if(pool == address(0)) revert AddressCantBeZero();
 
-        uint256 poolTokenBalance = ERC20(pool).balanceOf(msg.sender);
-
-        require(poolTokenBalance >= amount, "E: amount not enough");
-
         pool.safeTransfer(msg.sender, amount);
         IPool(pool).safeBurn(msg.sender);
     }
