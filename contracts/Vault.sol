@@ -9,6 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {Factory} from "./Factory.sol";
 import {Pool} from "./Pool.sol";
+import {IPool} from "./Interface/IPool.sol";
 
 contract Vault is Ownable {
 
@@ -77,23 +78,14 @@ contract Vault is Ownable {
 
         if(amount == 0) revert DepositAmountCantBeZero();
 
-        Pool pool = Pool(payable(factory.getPool(poolid)));
-        if(address(pool) == address(0)) revert AddressCantBeZero();
+        address pool = factory.getPool(poolid);
+        if(pool == address(0)) revert AddressCantBeZero();
 
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        token.safeTransferFrom(msg.sender, pool, amount);
 
-        // token.safeTransferFrom(msg.sender, address(pool), tokenDeposited);
-        pool.vault2Pool(amount);
-        
-        // low round
-        uint256 manageFeeAmount = amount.mul(manageFeeRate).div(FEE_DENOMIRATOR);
+        principal[msg.sender] = principal[msg.sender].add(amount);
 
-        uint256 tokenDeposited = amount.sub(manageFeeAmount);
-
-        principal[msg.sender] = principal[msg.sender].add(tokenDeposited);
-
-        pool.safeMint(msg.sender);
-        pool.safeMint(feeTo);
+        IPool(pool).safeMint(msg.sender);
 
         emit Deposit(token, msg.sender, address(pool), amount, block.timestamp);
     }
