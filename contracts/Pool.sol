@@ -227,7 +227,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         require(amount0 > 0, "E: amount cant be zero");
 
         (bool feeOn, address feeTo) = _mintFee(_reserve0);
-        uint _totalSupply = totalSupply(); // gas savings, must be defined here since totalSupply can update in _mintFee
+        uint _totalSupply = totalSupply; // gas savings,
         if (_totalSupply == 0) {
             liquidity = amount0.sqrt().sub(MINIMUM_LIQUIDITY);
             _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
@@ -260,7 +260,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
                 uint rootK = _reserve0.sqrt();
                 uint rootKLast = _kLast.sqrt();
                 if (rootK > rootKLast) {
-                    uint numerator = totalSupply().mul(rootK.sub(rootKLast));
+                    uint numerator = totalSupply.mul(rootK.sub(rootKLast));
                     uint denominator = rootK.mul(9).add(rootKLast);
                     uint liquidity = numerator / denominator;
                     if (liquidity > 0) _mint(feeTo, liquidity);
@@ -276,16 +276,16 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 _reserve0 = getTokenReserveValue();  
         address _token0 = Constants.USDT;
 
-        uint liquidity = balanceOf(address(this));
+        uint liquidity = balanceOf[address(this)];
 
         (bool feeOn, ) = _mintFee(_reserve0);
-        uint _totalSupply = totalSupply(); // gas savings, must be defined here since totalSupply can update in _mintFee
+        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = liquidity.mul(_reserve0) / _totalSupply; // using balances ensures pro-rata distribution
         require(amount0 > 0, 'E: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(address(this), liquidity);
         _token0.safeTransfer(to, amount0);
         
-        uint256 balance0 = IERC20(_token0).balanceOf(address(this));
+        uint256 balance0 = balanceOf[address(this)];
 
         _update(balance0);
         if (feeOn) kLast = _reserve0; // reserve0 and reserve1 are up-to-date
