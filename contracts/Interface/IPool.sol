@@ -35,11 +35,11 @@ interface IPool {
         bytes calldata data
     ) external;
 
-    /// @dev vault take USDT from pool
-    function pool2Vault(uint256 amount) external;
+    // /// @dev vault take USDT from pool
+    // function pool2Vault(uint256 amount) external;
 
-    /// @dev vault send USDT to pool
-    function vault2Pool(uint256 amount) external;
+    // /// @dev vault send USDT to pool
+    // function vault2Pool(uint256 amount) external;
 
     /// @dev mint token
     function safeMint(address to) external returns (uint liquidity);

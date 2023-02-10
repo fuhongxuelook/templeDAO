@@ -33,8 +33,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
     // only take once
     uint256 public manageFeeRate = 100;
 
-    uint256 public usdtIN;
-    uint256 public usdtOUT;
     uint256 public reserve0;
     address public factory;
     address public vault;
@@ -204,23 +202,21 @@ contract Pool is IPool, Token, ChainlinkOracle {
         return;
     }
 
+    // /// @dev vault take USDT from pool
+    // function pool2Vault(uint256 amount) external override onlyVault {
+    //     Constants.USDT.safeTransfer(msg.sender, amount);
 
-    /// @dev vault take USDT from pool
-    function pool2Vault(uint256 amount) external override onlyVault {
-        Constants.USDT.safeTransfer(msg.sender, amount);
+    //     usdtOUT += amount;
+    //     tokenReserve[Constants.USDT] -= amount;
+    // }
 
-        usdtOUT += amount;
-        tokenReserve[Constants.USDT] -= amount;
-    }
+    // /// @dev vault send USDT to pool
+    // function vault2Pool(uint256 amount) external override onlyVault {
+    //     Constants.USDT.safeTransferFrom(msg.sender, address(this), amount);
 
-    /// @dev vault send USDT to pool
-    function vault2Pool(uint256 amount) external override onlyVault {
-        Constants.USDT.safeTransferFrom(msg.sender, address(this), amount);
-
-        usdtIN += amount;
-        tokenReserve[Constants.USDT] += amount;
-    }
-
+    //     usdtIN += amount;
+    //     tokenReserve[Constants.USDT] += amount;
+    // }
 
     /// @dev mint token
     function safeMint(address to) external override returns (uint liquidity) {
@@ -228,6 +224,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         /// only support usdt token
         uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
         uint amount0 = balance0.sub(tokenReserve[Constants.USDT]);
+        require(amount0 > 0, "E: amount cant be zero");
 
         (bool feeOn, address feeTo) = _mintFee(_reserve0);
         uint _totalSupply = totalSupply(); // gas savings, must be defined here since totalSupply can update in _mintFee
@@ -240,8 +237,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         require(liquidity > 0, 'E: INSUFFICIENT_LIQUIDITY_MINTED');
         
         uint256 manageFee = liquidity.mul(manageFeeRate).div(FEE_DENOMIRATOR);
-        _mint(to, liquidity);
-        _mint(feeTo, liquidity.sub(manageFee));
+        _mint(feeTo, manageFee);
+        _mint(to, liquidity.sub(manageFee));
+
         if (feeOn) kLast = _reserve0; // reserve0 is up-to-date
         
         _update(balance0);
@@ -278,17 +276,16 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 _reserve0 = getTokenReserveValue();  
         address _token0 = Constants.USDT;
 
-        uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
         uint liquidity = balanceOf(address(this));
 
         (bool feeOn, ) = _mintFee(_reserve0);
         uint _totalSupply = totalSupply(); // gas savings, must be defined here since totalSupply can update in _mintFee
-        amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
-        require(amount0 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');
+        amount0 = liquidity.mul(_reserve0) / _totalSupply; // using balances ensures pro-rata distribution
+        require(amount0 > 0, 'E: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(address(this), liquidity);
         _token0.safeTransfer(to, amount0);
         
-        balance0 = IERC20(_token0).balanceOf(address(this));
+        uint256 balance0 = IERC20(_token0).balanceOf(address(this));
 
         _update(balance0);
         if (feeOn) kLast = _reserve0; // reserve0 and reserve1 are up-to-date
