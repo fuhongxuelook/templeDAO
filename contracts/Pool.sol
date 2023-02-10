@@ -239,9 +239,16 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _mint(feeTo, manageFee);
         _mint(to, liquidity.sub(manageFee));
 
-        if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 is up-to-date
         
         _update(balance0);
+
+        _reserve0 += amount0;
+        if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 is up-to-date
+    }
+
+    function calculateK() external view returns (uint256 k) {
+        uint256 _reserve0 = getTokenReserveValue();
+        k = _reserve0.mul(ONE_ETHER);
     }
 
     // update reserves and, on the first call per block, price accumulators
@@ -286,9 +293,11 @@ contract Pool is IPool, Token, ChainlinkOracle {
         
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
 
+        _update(balance0);
+
+        _reserve0 -= amount0;
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 and reserve1 are up-to-date
 
-        _update(balance0);
     }
 
     error DecimalIsZero(address token);
