@@ -79,7 +79,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
 
-    /// @dev initialuze
+    /// @dev initialize
     function initialize(string memory _poolname, address _vault, address _swap) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
@@ -225,7 +225,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint amount0 = balance0.sub(tokenReserve[Constants.USDT]);
         require(amount0 > 0, "E: amount cant be zero");
 
-        (bool feeOn, address feeTo) = _mintFee(_reserve0);
+        (bool feeOn, address feeTo) = _mintFeeV2(_reserve0);
         uint _totalSupply = totalSupply; // gas savings,
         if (_totalSupply == 0) {
             liquidity = Math.sqrt(amount0.mul(ONE_ETHER)).sub(MINIMUM_LIQUIDITY);
@@ -234,15 +234,16 @@ contract Pool is IPool, Token, ChainlinkOracle {
             liquidity = amount0.mul(_totalSupply) / _reserve0;
         }
         require(liquidity > 0, 'E: INSUFFICIENT_LIQUIDITY_MINTED');
-        
+            
+        // directly fee 
         uint256 manageFee = liquidity.mul(manageFeeRate).div(FEE_DENOMIRATOR);
         _mint(feeTo, manageFee);
         _mint(to, liquidity.sub(manageFee));
-
         
         _update(balance0);
 
         _reserve0 += amount0;
+        reserve0 = _reserve0;
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 is up-to-date
     }
 
@@ -277,6 +278,21 @@ contract Pool is IPool, Token, ChainlinkOracle {
         }
     }
 
+    function _mintFeeV2(uint256 _reserve0) private returns (bool feeOn, address feeTo) {
+        feeTo = IFactory(factory).feeTo();
+        feeOn = feeTo != address(0);
+        if (feeOn) {
+            if (_reserve0 > reserve0) {
+                uint numerator = totalSupply.mul(_reserve0.sub(reserve0));
+                uint denominator = _reserve0;
+                uint liquidity = numerator / denominator;
+                if (liquidity > 0) _mint(feeTo, liquidity);
+            }
+        } else if (reserve0 != 0) {
+            reserve0 = 0;
+        }
+    }
+
     /// @dev burn token
     function safeBurn(address to) external override returns (uint amount0) {
         uint256 _reserve0 = getTokenReserveValue();  
@@ -284,7 +300,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
         uint liquidity = balanceOf[address(this)];
 
-        (bool feeOn, ) = _mintFee(_reserve0);
+        (bool feeOn, ) = _mintFeeV2(_reserve0);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = liquidity.mul(_reserve0) / _totalSupply; // using balances ensures pro-rata distribution
         require(amount0 > 0, 'E: INSUFFICIENT_LIQUIDITY_BURNED');
@@ -296,6 +312,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _update(balance0);
 
         _reserve0 -= amount0;
+        reserve0 = _reserve0;
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 and reserve1 are up-to-date
 
     }
