@@ -283,8 +283,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
         feeOn = feeTo != address(0);
         if (feeOn) {
             if (_reserve0 > reserve0) {
-                uint numerator = totalSupply.mul(_reserve0.sub(reserve0));
-                uint denominator = _reserve0;
+                uint numerator = totalSupply.mul(_reserve0.sub(reserve0)).mul(profitFeeRate);
+                uint denominator = _reserve0.mul(FEE_DENOMIRATOR);
                 uint liquidity = numerator / denominator;
                 if (liquidity > 0) _mint(feeTo, liquidity);
             }
