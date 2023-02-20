@@ -35,11 +35,11 @@ contract Pool is IPool, Token, ChainlinkOracle {
     uint256 public manageFeeRate = 100;
 
     uint256 public reserve0;
+    uint256 public kLast;
+
     address public factory;
     address public vault;
     address public swap;
-
-    uint256 public kLast;
 
     string poolname;
 
@@ -227,11 +227,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _reserve0 += amount0;
         reserve0 = _reserve0;
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 is up-to-date
-    }
-
-    function calculateK() external view returns (uint256 k) {
-        uint256 _reserve0 = getReserves();
-        k = _reserve0.mul(ONE_ETHER);
     }
 
     // update reserves and, on the first call per block, price accumulators

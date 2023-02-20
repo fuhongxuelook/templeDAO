@@ -153,11 +153,8 @@ contract Vault is Ownable {
         
         /// second check      
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
-        uint256 liquidity = pool.balanceOf(account);
         value = pool.valueInPool(account);
         if(value <= usdtReserve) revert DontNeedLiquidate();
-
-
     }
 
 
