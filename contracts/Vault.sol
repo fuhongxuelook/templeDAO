@@ -141,28 +141,23 @@ contract Vault is Ownable {
         uint256 amount, 
         Pool pool
     ) 
-        public 
+        internal 
         view 
         returns (
             uint256 value
         ) 
     {
+        /// first check
+        uint256 tokenReserve = pool.tokenReserve(token);
+        if(tokenReserve < amount) revert TokenReserveNotEnough(token);
+        
+        /// second check      
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
         uint256 liquidity = pool.balanceOf(account);
-
         value = pool.valueInPool(liquidity);
         if(value <= usdtReserve) revert DontNeedLiquidate();
 
-        uint256 tokenReserve = pool.tokenReserve(token);
-        if(tokenReserve < amount) revert TokenReserveNotEnough(token);
 
-
-        // uint256 tokenPrice = uint256(pool.getLatestPrice(token));
-
-        // uint256 tokenAmount = tokenPrice.mul(amount);
-
-        // /// token amount less than usdt amount * 1.05
-        // require(tokenAmount <= needLiquidatedUsdt.mul(105).div(100), "amount not enough"); 
     }
 
 
