@@ -21,8 +21,6 @@ contract Vault is Ownable {
     uint256 public profitFeeRate = 1_000;
     // only take once
     uint256 public manageFeeRate = 100;
-    uint256 public reserve0;
-    uint256 public gross;
     Factory public factory;
 
     // address user => principal
@@ -57,11 +55,6 @@ contract Vault is Ownable {
     }
    
     receive() external payable {}
-
-    /// @dev get token reserve in vault
-    function getReserve0() public view returns (uint256) {
-        return reserve0;
-    }
 
     /// @dev deposit token to vault;
     /// @param token:  deposited token address;
