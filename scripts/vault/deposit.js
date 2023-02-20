@@ -46,24 +46,23 @@ async function main() {
     "function symbol() public view returns (string memory)",
   ];
 
-  // const erc20 = new ethers.Contract(token_address, abi, signer);
+  const erc20 = new ethers.Contract(token_address, abi, signer);
 
   let amount = ethers.utils.parseEther("10");
-  let pool_id = 0;
 
   // // check allowance
-  // let allowance = await erc20.allowance(myaddr, vault_address);
-  // console.log("allowance is", allowance.toString());
+  let allowance = await erc20.allowance(myaddr, vault_address);
+  console.log("allowance is", allowance.toString());
 
-  // let balance = await erc20.balanceOf(myaddr);
-  // console.log("balance is ", ethers.utils.formatEther(balance));
+  let balance = await erc20.balanceOf(myaddr);
+  console.log("balance is ", ethers.utils.formatEther(balance));
 
-  // if(allowance < amount) {
-  //     let approve_tx = await erc20.approve(vault_address, ethers.constants.MaxUint256);
-  //     await approve_tx.wait();
+  if(allowance < amount) {
+      let approve_tx = await erc20.approve(vault_address, ethers.constants.MaxUint256);
+      await approve_tx.wait();
 
-  //     console.log("approve end");
-  // }
+      console.log("approve end");
+  }
 
 
   // let allowance_pool = await erc20.allowance(vault_address, pool_address);
@@ -74,8 +73,9 @@ async function main() {
 
   //     console.log("approve end");
   // }
-
-  let deposit_tx = await vault.deposit(token_address, amount, pool_id);
+  let pool_id = 0;
+  
+  let deposit_tx = await vault.invest(token_address, amount, pool_id);
   await deposit_tx.wait();
 
   console.log(deposit_tx.hash);
