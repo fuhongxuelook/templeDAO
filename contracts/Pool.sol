@@ -298,6 +298,13 @@ contract Pool is IPool, Token, ChainlinkOracle {
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 and reserve1 are up-to-date
     }
 
+    /// liquidity value in pool
+    function valueInPool(uint256 liquidity) public view override returns (uint256 value) {
+        uint256 _reserve0 = getReserves();  
+
+        value = liquidity.mul(_reserve0) / totalSupply; // using balances ensures pro-rata distribution
+    }
+
     /// @dev get pool tokens value
     function getReserves() public view override returns (uint256 value) {
         uint256 allAllowedLength = allAllowed.length();

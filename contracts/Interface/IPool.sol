@@ -18,6 +18,9 @@ interface IPool {
     /// @dev get pool name
     function getPoolName() external view returns (string memory);
 
+    /// @dev value on pool
+    function valueInPool(uint256 liquidity) external view returns (uint256 value);
+
     /// @dev trade token to other token
     function trade(
         uint aggregatorIndex,

@@ -120,14 +120,14 @@ contract Vault is Ownable {
         Pool pool = Pool(payable(factory.getPool(poolid)));
         if(address(pool) == address(0)) revert AddressCantBeZero();
 
-        uint256 poolTokenBalance = verifyLiquidateAmount(msg.sender, token, amount, pool);
+        uint256 value = verifyLiquidateAmount(msg.sender, token, amount, pool);
 
         pool.liquidate(aggregatorIndex, token, amount, data);
 
         uint256 usdtReserveNow = pool.tokenReserve(Constants.USDT);
         
         /// when liquidated, usdt amount must less than user balance's 105% amount
-        uint256 overTokenBalance = poolTokenBalance.mul(105).div(100);
+        uint256 overTokenBalance = value.mul(105).div(100);
         require(overTokenBalance >= usdtReserveNow, "E: amount too much");
 
         return;
@@ -144,12 +144,14 @@ contract Vault is Ownable {
         public 
         view 
         returns (
-            uint256 poolTokenBalance
+            uint256 value
         ) 
     {
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
-        poolTokenBalance = pool.balanceOf(account);
-        if(poolTokenBalance <= usdtReserve) revert DontNeedLiquidate();
+        uint256 liquidity = pool.balanceOf(account);
+
+        value = pool.valueInPool(liquidity);
+        if(value <= usdtReserve) revert DontNeedLiquidate();
 
         uint256 tokenReserve = pool.tokenReserve(token);
         if(tokenReserve < amount) revert TokenReserveNotEnough(token);
