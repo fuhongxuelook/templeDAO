@@ -25,11 +25,6 @@ contract Vault is Ownable {
     uint256 public gross;
     Factory public factory;
 
-    address public feeTo;
-  
-    // address token => reserve amount
-    mapping(address => uint256) public poolSend;
-    mapping(address => uint256) public poolGet;
     // address user => principal
     mapping(address => uint256) public principal;
     // address token => bool status
@@ -58,7 +53,6 @@ contract Vault is Ownable {
 
     constructor(address _factory) {
         factory = Factory(_factory);
-        feeTo = factory.feeTo();
         allowed[Constants.USDT] = true;
     }
    
@@ -73,7 +67,7 @@ contract Vault is Ownable {
     /// @param token:  deposited token address;
     /// @param amount: deposit amount ;
     /// @param poolid: invest pool ;
-    function deposit(address token, uint256 amount, uint256 poolid) external {
+    function invest(address token, uint256 amount, uint256 poolid) external {
         if(!allowed[token]) revert NotAllowedToken(token);
 
         if(amount == 0) revert DepositAmountCantBeZero();

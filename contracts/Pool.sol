@@ -50,7 +50,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
     mapping(address => uint256) public override tokenReserve;
     mapping(address => uint256) public cachedDecimals; 
 
-
     event TradeTrace(
         address fromToken, 
         address toToken, 
@@ -64,7 +63,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
     error TokenReserveNotEnough(address);
     error SwapError();
 
-
     constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
         cachedDecimals[Constants.USDT] = Constants.USDTDecimal;
@@ -77,7 +75,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
         require(msg.sender == vault, "E: FORBIDDEN");
         _;
     }
-
 
     /// @dev initialize
     function initialize(string memory _poolname, address _vault, address _swap) external override {
@@ -314,7 +311,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _reserve0 -= amount0;
         reserve0 = _reserve0;
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 and reserve1 are up-to-date
-
     }
 
     error DecimalIsZero(address token);
@@ -377,7 +373,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         if(cachedDecimals[token] > 0) {
             return;
         }
-        (bool success, bytes memory res) = token.delegatecall(abi.encodeWithSignature("decimals()"));
+        (bool success, bytes memory res) = token.staticcall(abi.encodeWithSignature("decimals()"));
         require(success, "E: call error");
         uint256 decimal = uint256(abi.decode(res, (uint8)));
         cachedDecimals[token] = decimal;

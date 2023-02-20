@@ -27,7 +27,6 @@ contract Factory is IFactory {
 
     constructor() {
         owner = msg.sender;
-        feeTo = 0x3D2C9c796a1BFdBC803775CfffA1DeB3F78228Bb;
     }
 
     modifier onlyOwner() {
