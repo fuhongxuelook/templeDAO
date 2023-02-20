@@ -299,7 +299,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     /// liquidity value in pool
-    function valueInPool(uint256 liquidity) public view override returns (uint256 value) {
+    function valueInPool(address account) public view override returns (uint256 value) {
+        uint256 liquidity = balanceOf[account];
         uint256 _reserve0 = getReserves();  
 
         value = liquidity.mul(_reserve0) / totalSupply; // using balances ensures pro-rata distribution

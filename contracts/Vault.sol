@@ -127,7 +127,7 @@ contract Vault is Ownable {
         uint256 usdtReserveNow = pool.tokenReserve(Constants.USDT);
         
         /// when liquidated, usdt amount must less than user balance's 105% amount
-        uint256 overTokenBalance = value.mul(105).div(100);
+        uint256 overTokenBalance = value.mul(103).div(100);
         require(overTokenBalance >= usdtReserveNow, "E: amount too much");
 
         return;
@@ -154,7 +154,7 @@ contract Vault is Ownable {
         /// second check      
         uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
         uint256 liquidity = pool.balanceOf(account);
-        value = pool.valueInPool(liquidity);
+        value = pool.valueInPool(account);
         if(value <= usdtReserve) revert DontNeedLiquidate();
 
 
