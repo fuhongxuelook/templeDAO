@@ -62,6 +62,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     error AddressCantBeZero();
     error TokenReserveNotEnough(address);
     error SwapError();
+    error DecimalIsZero(address token);
 
     constructor(uint256 poolid) Token(poolid.toString()) {
         factory = msg.sender;
@@ -198,25 +199,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         return;
     }
 
-    // /// @dev vault take USDT from pool
-    // function pool2Vault(uint256 amount) external override onlyVault {
-    //     Constants.USDT.safeTransfer(msg.sender, amount);
-
-    //     usdtOUT += amount;
-    //     tokenReserve[Constants.USDT] -= amount;
-    // }
-
-    // /// @dev vault send USDT to pool
-    // function vault2Pool(uint256 amount) external override onlyVault {
-    //     Constants.USDT.safeTransferFrom(msg.sender, address(this), amount);
-
-    //     usdtIN += amount;
-    //     tokenReserve[Constants.USDT] += amount;
-    // }
-
     /// @dev mint token
     function safeMint(address to) external override returns (uint liquidity) {
-        uint256 _reserve0 = getTokenReserveValue();
+        uint256 _reserve0 = getReserves();
         /// only support usdt token
         uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
         uint amount0 = balance0.sub(tokenReserve[Constants.USDT]);
@@ -245,7 +230,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     function calculateK() external view returns (uint256 k) {
-        uint256 _reserve0 = getTokenReserveValue();
+        uint256 _reserve0 = getReserves();
         k = _reserve0.mul(ONE_ETHER);
     }
 
@@ -292,7 +277,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     /// @dev burn token
     function safeBurn(address to) external override returns (uint amount0) {
-        uint256 _reserve0 = getTokenReserveValue();  
+        uint256 _reserve0 = getReserves();  
         address _token0 = Constants.USDT;
 
         uint liquidity = balanceOf[address(this)];
@@ -313,10 +298,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
         if (feeOn) kLast = _reserve0.mul(ONE_ETHER); // reserve0 and reserve1 are up-to-date
     }
 
-    error DecimalIsZero(address token);
-
     /// @dev get pool tokens value
-    function getTokenReserveValue() public view returns (uint256 value) {
+    function getReserves() public view override returns (uint256 value) {
         uint256 allAllowedLength = allAllowed.length();
 
         if(allAllowedLength == 0) return 0;

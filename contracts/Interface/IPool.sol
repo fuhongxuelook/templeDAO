@@ -46,4 +46,6 @@ interface IPool {
     /// @dev burn token
     function safeBurn(address to) external returns (uint amount0);
 
+    function getReserves() external view returns (uint256 value);
+
 }

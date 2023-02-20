@@ -77,45 +77,6 @@ contract Vault is Ownable {
         emit Deposit(token, msg.sender, address(pool), amount, block.timestamp);
     }
 
-    /// @dev withdraw token from vault
-    /// @param amount: withdraws amount 
-    /// @param poolid: invest pool 
-    // function withdraw(address token, uint256 amount, uint256 poolid) external {
-    //     if(!allowed[token]) revert NotAllowedToken(token);
-    //     if(amount == 0) revert WithdrawAmountCantBeZero();
-
-    //     Pool pool = Pool(payable(factory.getPool(poolid)));
-    //     if(address(pool) == address(0)) revert AddressCantBeZero();
-
-    //     uint256 poolTokenBalance = pool.balanceOf(msg.sender);
-
-    //     require(poolTokenBalance >= amount, "E: amount not enough");
-
-    //     uint256 poolTokenSupply = pool.totalSupply();
-    //     uint256 poolReserveValue = pool.getTokenReserveValue();
-
-    //     uint256 revenue = amount.mul(poolReserveValue).div(poolTokenSupply);
-
-    //     /// principle
-    //     uint256 partPrincipal = amount.mul(principal[msg.sender]).div(poolTokenBalance);
-    //     uint256 tokenReserve = pool.tokenReserve(token);
-
-    //     // require(tokenReserve >= revenue, "E: must liquidate");
-    //     if(tokenReserve < revenue) revert TokenReserveNotEnough(token);
-
-    //     uint256 profitFee;
-    //     if(revenue > partPrincipal && !whitelist[msg.sender]) {
-    //         profitFee = revenue.sub(partPrincipal).mul(profitFeeRate).div(FEE_DENOMIRATOR);
-    //         //Constants.USDT.safeTransfer(feeTo, profitFee);
-    //         pool.safeMint(feeTo);
-    //     }
-
-    //     uint256 withdrawAmount = revenue.sub(profitFee);
-    //     pool.pool2Vault(withdrawAmount);
-    //     token.safeTransfer(msg.sender, withdrawAmount);
-    //     pool.safeBurn(msg.sender);
-    // }
-
     function withdraw(uint256 poolid, uint256 amount) external {
         if(amount == 0) revert WithdrawAmountCantBeZero();
 
@@ -186,13 +147,13 @@ contract Vault is Ownable {
             uint256 poolTokenBalance
         ) 
     {
+        uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
+        poolTokenBalance = pool.balanceOf(account);
+        if(poolTokenBalance <= usdtReserve) revert DontNeedLiquidate();
+
         uint256 tokenReserve = pool.tokenReserve(token);
         if(tokenReserve < amount) revert TokenReserveNotEnough(token);
 
-        uint256 usdtReserve = pool.tokenReserve(Constants.USDT);
-        poolTokenBalance = pool.balanceOf(account);
-
-        if(poolTokenBalance <= usdtReserve) revert DontNeedLiquidate();
 
         // uint256 tokenPrice = uint256(pool.getLatestPrice(token));
 
