@@ -199,6 +199,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     /// @dev liquidate token to USDT
+    /// @notice force call by vault to liquidate any token to usdt
     function liquidate(
         uint256 aggregatorIndex,
         address token,
@@ -234,7 +235,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _mint(feeTo, manageFee);
         _mint(to, liquidity.sub(manageFee));
         
-        _update(balance);
+        _update(Constants.USDT, balance);
 
         _reserve += amount;
         reserve = _reserve;
@@ -242,8 +243,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     // update reserves and, on the first call per block, price accumulators
-    function _update(uint _balance) private {
-        tokenReserve[Constants.USDT] = _balance;
+    function _update(address _token, uint _balance) private {
+        tokenReserve[_token] = _balance;
     }
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
@@ -298,7 +299,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         
         uint256 balance = IERC20(_token0).balanceOf(address(this));
 
-        _update(balance);
+        _update(Constants.USDT, balance);
 
         _reserve -= amount;
         reserve = _reserve;
@@ -399,5 +400,15 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     function allAllowedTokens() public view returns(address[] memory tokens) {
         tokens = allAllowed.values();
+    }
+
+    // force balances to match reserves
+    function skim(address to, address token) external {
+        token.safeTransfer(to, IERC20(token).balanceOf(address(this)).sub(tokenReserve[token]));
+    }
+
+    // force reserves to match balances
+    function sync(address token) external {
+        _update(token, IERC20(token).balanceOf(address(this)));
     }
 }
