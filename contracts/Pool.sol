@@ -39,7 +39,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     address public factory;
     address public vault;
-    address public swap;
+    address public router;
 
     string poolname;
 
@@ -78,11 +78,11 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     /// @dev initialize
-    function initialize(string memory _poolname, address _vault, address _swap) external override {
+    function initialize(string memory _poolname, address _vault, address _router) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         poolname = _poolname;
-        swap = _swap;
+        router = _router;
 
         Constants.USDT.safeApprove(vault, type(uint256).max);
     }
@@ -168,13 +168,13 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 amount,
         bytes calldata data
     ) internal {
-        approveAllowance(swap, fromToken, amount);
+        approveAllowance(router, fromToken, amount);
 
         // mapping(address => uint256) public tokenReserve;
         if(amount > tokenReserve[fromToken]) revert TokenReserveNotEnough(fromToken);
 
         uint256 swapBefore = IERC20(toToken).balanceOf(address(this));
-        ISwap(swap).swap(aggregatorIndex, fromToken, toToken, amount, data);
+        ISwap(router).swap(aggregatorIndex, fromToken, toToken, amount, data);
         uint256 swapAfter = IERC20(toToken).balanceOf(address(this));
 
         uint256 realAmountIn = swapAfter - swapBefore;
