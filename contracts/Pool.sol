@@ -148,20 +148,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 amount,
         bytes calldata data
     ) external override {
-        if(!allowed[toToken]) revert TokenNotAllowed(toToken);
-        approveAllowance(swap, fromToken, amount);
-
-        uint256 swapBefore = currentBalance(toToken);
-        ISwap(swap).swap(aggregatorIndex, fromToken, toToken, amount, data);
-        uint256 swapAfter = currentBalance(toToken);
-        
-        uint256 realAmountIn = swapAfter - swapBefore;
-        if(realAmountIn == 0) revert SwapError();
-
-        tokenReserve[fromToken] -= amount;
-        tokenReserve[toToken] += realAmountIn;
-
-        emit TradeTrace(fromToken, toToken, amount, realAmountIn, block.timestamp);
+        _swap(aggregatorIndex, fromToken, toToken, amount, data);
     }  
 
     /// @dev get token balance 
@@ -174,6 +161,33 @@ contract Pool is IPool, Token, ChainlinkOracle {
         return IERC20(token).balanceOf(address(this));
     }
 
+    function _swap(
+        uint256 aggregatorIndex,
+        address fromToken,
+        address toToken,
+        uint256 amount,
+        bytes calldata data
+    ) internal {
+        if(!allowed[toToken]) revert TokenNotAllowed(toToken);
+
+        approveAllowance(swap, fromToken, amount);
+
+        // mapping(address => uint256) public tokenReserve;
+        if(amount > tokenReserve[fromToken]) revert TokenReserveNotEnough(fromToken);
+
+        uint256 swapBefore = IERC20(toToken).balanceOf(address(this));
+        ISwap(swap).swap(aggregatorIndex, fromToken, toToken, amount, data);
+        uint256 swapAfter = IERC20(toToken).balanceOf(address(this));
+
+        uint256 realAmountIn = swapAfter - swapBefore;
+        if(realAmountIn == 0) revert SwapError();
+
+        tokenReserve[fromToken] -= amount;
+        tokenReserve[toToken] += realAmountIn;
+
+        emit TradeTrace(fromToken, toToken, amount, realAmountIn, block.timestamp);
+    }
+
     /// @dev liquidate token to USDT
     function liquidate(
         uint256 aggregatorIndex,
@@ -183,20 +197,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     ) external override onlyVault {
         require(token != Constants.USDT, "E: token cant be USDT");
 
-        // mapping(address => uint256) public tokenReserve;
-        if(amount > tokenReserve[token]) revert TokenReserveNotEnough(token);
-
-        uint256 swapBefore = IERC20(Constants.USDT).balanceOf(address(this));
-        ISwap(swap).swap(aggregatorIndex, token, Constants.USDT, amount, data);
-        uint256 swapAfter = IERC20(Constants.USDT).balanceOf(address(this));
-
-        uint256 realAmountIn = swapAfter - swapBefore;
-        if(realAmountIn == 0) revert SwapError();
-
-        tokenReserve[token] -= amount;
-        tokenReserve[Constants.USDT] += realAmountIn;
-
-        return;
+        _swap(aggregatorIndex, token, Constants.USDT, amount, data);
     }
 
     /// @dev mint token
