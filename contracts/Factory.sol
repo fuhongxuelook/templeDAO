@@ -16,8 +16,8 @@ contract Factory is IFactory {
     /// vault address
     address public override vault;
 
-    /// inter swap address
-    address public override swap;
+    /// inter router address
+    address public override router;
 
     // pools poolid => pool address
     mapping(uint256 => address) pools;
@@ -56,7 +56,7 @@ contract Factory is IFactory {
         assembly {
             pool := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
         }
-        IPool(pool).initialize(poolname, vault, swap);
+        IPool(pool).initialize(poolname, vault, router);
 
         pools[poolid] = pool;
         allPools.push(pool);
@@ -74,10 +74,10 @@ contract Factory is IFactory {
         vault = _vault;
     }
 
-    /// @dev swap
-    function setSwap(address _swap) external override onlyOwner {
-        require(_swap != address(0), "E: error");
-        swap = _swap;
+    /// @dev router
+    function setRouter(address _router) external override onlyOwner {
+        require(_router != address(0), "E: error");
+        router = _router;
     }
 
 }
