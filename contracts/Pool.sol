@@ -204,16 +204,16 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 _reserve = getReserves();
         /// only support usdt token
         uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
-        uint amount0 = balance0.sub(tokenReserve[Constants.USDT]);
-        require(amount0 > 0, "E: amount cant be zero");
+        uint amount = balance0.sub(tokenReserve[Constants.USDT]);
+        require(amount > 0, "E: amount cant be zero");
 
         (bool feeOn, address feeTo) = _mintFeeV2(_reserve);
         uint _totalSupply = totalSupply; // gas savings,
         if (_totalSupply == 0) {
-            liquidity = Math.sqrt(amount0.mul(ONE_ETHER)).sub(MINIMUM_LIQUIDITY);
+            liquidity = Math.sqrt(amount.mul(ONE_ETHER)).sub(MINIMUM_LIQUIDITY);
             _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
         } else {
-            liquidity = amount0.mul(_totalSupply) / _reserve;
+            liquidity = amount.mul(_totalSupply) / _reserve;
         }
         require(liquidity > 0, 'E: INSUFFICIENT_LIQUIDITY_MINTED');
             
@@ -224,7 +224,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         
         _update(balance0);
 
-        _reserve += amount0;
+        _reserve += amount;
         reserve = _reserve;
         if (feeOn) kLast = _reserve.mul(ONE_ETHER); // reserve is up-to-date
     }
@@ -271,7 +271,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     /// @dev burn token
-    function safeBurn(address to) external override returns (uint amount0) {
+    function safeBurn(address to) external override returns (uint amount) {
         uint256 _reserve = getReserves();  
         address _token0 = Constants.USDT;
 
@@ -279,16 +279,16 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
         (bool feeOn, ) = _mintFeeV2(_reserve);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
-        amount0 = liquidity.mul(_reserve) / _totalSupply; // using balances ensures pro-rata distribution
-        require(amount0 > 0, 'E: INSUFFICIENT_LIQUIDITY_BURNED');
+        amount = liquidity.mul(_reserve) / _totalSupply; // using balances ensures pro-rata distribution
+        require(amount > 0, 'E: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(address(this), liquidity);
-        _token0.safeTransfer(to, amount0);
+        _token0.safeTransfer(to, amount);
         
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
 
         _update(balance0);
 
-        _reserve -= amount0;
+        _reserve -= amount;
         reserve = _reserve;
         if (feeOn) kLast = _reserve.mul(ONE_ETHER); // reserve and reserve1 are up-to-date
     }
@@ -320,6 +320,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         /// @nitice allAllowed start from 1;
         for(uint256 i = 0; i < allAllowedLength; ++i) {
             // save gas
+            // literally
             t_token = allAllowed.at(i);
             // save gas
             t_tokenReserve = tokenReserve[t_token];
