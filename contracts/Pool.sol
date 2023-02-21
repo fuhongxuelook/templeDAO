@@ -148,13 +148,13 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 amount,
         bytes calldata data
     ) external override {
+        if(!allowed[toToken]) revert TokenNotAllowed(toToken);
+
         _swap(aggregatorIndex, fromToken, toToken, amount, data);
     }  
 
     /// @dev get token balance 
     function currentBalance(address token) internal view returns (uint256) {
-        require(token != address(0), "E: error");
-
         if(token == Constants.ETH) {
             return address(this).balance;
         }
@@ -168,8 +168,6 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 amount,
         bytes calldata data
     ) internal {
-        if(!allowed[toToken]) revert TokenNotAllowed(toToken);
-
         approveAllowance(swap, fromToken, amount);
 
         // mapping(address => uint256) public tokenReserve;
@@ -196,6 +194,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         bytes calldata data
     ) external override onlyVault {
         require(token != Constants.USDT, "E: token cant be USDT");
+        if(!allowed[token]) revert TokenNotAllowed(token);
 
         _swap(aggregatorIndex, token, Constants.USDT, amount, data);
     }
