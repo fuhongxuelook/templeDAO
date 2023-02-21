@@ -203,8 +203,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     function safeMint(address to) external override returns (uint liquidity) {
         uint256 _reserve = getReserves();
         /// only support usdt token
-        uint balance0 = IERC20(Constants.USDT).balanceOf(address(this));
-        uint amount = balance0.sub(tokenReserve[Constants.USDT]);
+        uint balance = IERC20(Constants.USDT).balanceOf(address(this));
+        uint amount = balance.sub(tokenReserve[Constants.USDT]);
         require(amount > 0, "E: amount cant be zero");
 
         (bool feeOn, address feeTo) = _mintFeeV2(_reserve);
@@ -222,7 +222,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _mint(feeTo, manageFee);
         _mint(to, liquidity.sub(manageFee));
         
-        _update(balance0);
+        _update(balance);
 
         _reserve += amount;
         reserve = _reserve;
@@ -230,8 +230,8 @@ contract Pool is IPool, Token, ChainlinkOracle {
     }
 
     // update reserves and, on the first call per block, price accumulators
-    function _update(uint _balance0) private {
-        tokenReserve[Constants.USDT] = _balance0;
+    function _update(uint _balance) private {
+        tokenReserve[Constants.USDT] = _balance;
     }
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
@@ -284,9 +284,9 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _burn(address(this), liquidity);
         _token0.safeTransfer(to, amount);
         
-        uint256 balance0 = IERC20(_token0).balanceOf(address(this));
+        uint256 balance = IERC20(_token0).balanceOf(address(this));
 
-        _update(balance0);
+        _update(balance);
 
         _reserve -= amount;
         reserve = _reserve;
