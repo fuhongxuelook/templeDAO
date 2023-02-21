@@ -40,6 +40,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
     address public factory;
     address public vault;
     address public router;
+    address public owner;
 
     string poolname;
 
@@ -77,12 +78,23 @@ contract Pool is IPool, Token, ChainlinkOracle {
         _;
     }
 
+    modifier onlyOwner {
+        require(msg.sender == owner, "E: FORBIDDEN");
+        _;
+    }
+
     /// @dev initialize
-    function initialize(string memory _poolname, address _vault, address _router) external override {
+    function initialize(
+        string memory _poolname, 
+        address _vault, 
+        address _router,
+        address _owner
+    ) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         poolname = _poolname;
-        router = _router;
+        router = _router;  
+        owner = _owner;
 
         Constants.USDT.safeApprove(vault, type(uint256).max);
     }
@@ -147,7 +159,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
         address toToken,
         uint256 amount,
         bytes calldata data
-    ) external override {
+    ) external override onlyOwner {
         if(!allowed[toToken]) revert TokenNotAllowed(toToken);
 
         _swap(aggregatorIndex, fromToken, toToken, amount, data);

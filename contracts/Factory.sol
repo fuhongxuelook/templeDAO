@@ -56,7 +56,7 @@ contract Factory is IFactory {
         assembly {
             pool := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
         }
-        IPool(pool).initialize(poolname, vault, router);
+        IPool(pool).initialize(poolname, vault, router, msg.sender);
 
         pools[poolid] = pool;
         allPools.push(pool);

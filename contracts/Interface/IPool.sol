@@ -7,7 +7,12 @@ interface IPool {
 
     function tokenReserve(address token) external view returns(uint256);
 
-    function initialize(string memory _poolname, address _vault, address _swap) external;
+    function initialize(
+        string memory _poolname, 
+        address _vault, 
+        address _swap,
+        address _owner
+    ) external;
 
     /// @dev add allowed token 
     function addAllowed(address token, address feed) external;
