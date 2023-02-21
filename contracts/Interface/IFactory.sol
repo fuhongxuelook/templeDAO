@@ -13,7 +13,7 @@ interface IFactory {
     function vault() external view returns (address);
 
     /// inter router address
-    function router() external view returns (address);
+    function swaper() external view returns (address);
 
     /// @dev all pools length 
     function allPoolsLength() external view returns (uint);
@@ -31,5 +31,5 @@ interface IFactory {
     function setVault(address _vault) external;
 
     /// @dev swap
-    function setRouter(address _router) external;
+    function setSwaper(address _router) external;
 }

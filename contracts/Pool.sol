@@ -39,7 +39,7 @@ contract Pool is IPool, Token, ChainlinkOracle {
 
     address public factory;
     address public vault;
-    address public router;
+    address public swaper;
     address public owner;
 
     string poolname;
@@ -87,13 +87,13 @@ contract Pool is IPool, Token, ChainlinkOracle {
     function initialize(
         string memory _poolname, 
         address _vault, 
-        address _router,
+        address _swaper,
         address _owner
     ) external override {
         require(msg.sender == factory, 'E: FORBIDDEN');
         vault = _vault;
         poolname = _poolname;
-        router = _router;  
+        swaper = _swaper;  
         owner = _owner;
 
         Constants.USDT.safeApprove(vault, type(uint256).max);
@@ -112,14 +112,14 @@ contract Pool is IPool, Token, ChainlinkOracle {
      * if less than amount, approve max(uint256)
      * 
      */ 
-    function approveAllowance(address router, address token, uint256 amount) internal {
+    function approveAllowance(address swaper, address token, uint256 amount) internal {
         if(token == Constants.ETH) return;
 
-        uint256 allowance = IERC20(token).allowance(address(this), router);
+        uint256 allowance = IERC20(token).allowance(address(this), swaper);
         if(allowance >= amount) {
             return;
         }
-        token.safeApprove(router, type(uint256).max);
+        token.safeApprove(swaper, type(uint256).max);
     }
 
     /// @dev add allowed token 
@@ -180,13 +180,13 @@ contract Pool is IPool, Token, ChainlinkOracle {
         uint256 amount,
         bytes calldata data
     ) internal {
-        approveAllowance(router, fromToken, amount);
+        approveAllowance(swaper, fromToken, amount);
 
         // mapping(address => uint256) public tokenReserve;
         if(amount > tokenReserve[fromToken]) revert TokenReserveNotEnough(fromToken);
 
         uint256 swapBefore = IERC20(toToken).balanceOf(address(this));
-        ISwap(router).swap(aggregatorIndex, fromToken, toToken, amount, data);
+        ISwap(swaper).swap(aggregatorIndex, fromToken, toToken, amount, data);
         uint256 swapAfter = IERC20(toToken).balanceOf(address(this));
 
         uint256 realAmountIn = swapAfter - swapBefore;

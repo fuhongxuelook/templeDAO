@@ -143,9 +143,7 @@ contract Vault is Ownable {
     ) 
         internal 
         view 
-        returns (
-            uint256 value
-        ) 
+        returns (uint256 value) 
     {
         /// first check
         uint256 tokenReserve = pool.tokenReserve(token);
